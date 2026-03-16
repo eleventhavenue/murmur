@@ -40,7 +40,7 @@
       "endpoints": [
         "https://github.com/ayot-labs/murmur/releases/latest/download/latest.json"
       ],
-      "pubkey": ""
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg1RDQ1RkVDOTMyMDY3QkQKUldTOVp5Q1Q3Ri9VaGFFS29SaUhaNUNUS2ttcG5uRW56Tm1XS2pqRGFLckVLTlVlb3F2c1Roc2oK"
     }
   },
   "bundle": {
