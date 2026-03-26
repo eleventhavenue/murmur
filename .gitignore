@@ -17,3 +17,9 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Site
+site/node_modules/
+site/.next/
+site/.env.local
+site/.vercel/

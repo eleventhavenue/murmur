@@ -6,7 +6,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 pub fn register(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let app_clone = app.clone();
 
-    app.global_shortcut().on_shortcut("ctrl+alt+n", move |_app_handle, _shortcut, event| {
+    app.global_shortcut().on_shortcut("ctrl+alt+m", move |_app_handle, _shortcut, event| {
         if event.state == ShortcutState::Pressed {
             let text = crate::clipboard::capture_selection(&app_clone);
 

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 120" width="600" height="120" role="img" aria-labelledby="wm-title">
+  <title id="wm-title">Murmur Wordmark (light on dark)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400&amp;display=swap');
+    .wordmark {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 300;
+      font-size: 72px;
+      letter-spacing: 0.08em;
+      fill: #E8E8EC;
+    }
+  </style>
+  <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" class="wordmark">murmur</text>
+</svg>

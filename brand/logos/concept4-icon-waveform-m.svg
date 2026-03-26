@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">Murmur Logo — The Waveform M</title>
+  <!-- Dark background — rounded square (app icon style) -->
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="#161618"/>
+  <!-- M as waveform — a single continuous stroke -->
+  <!-- Starts bottom-left, up to first peak, down to valley, up to second peak, down to bottom-right -->
+  <path d="M128 360 L128 196 Q128 152 160 152 L208 256 Q228 296 256 200 Q284 296 304 256 L352 152 Q384 152 384 196 L384 360"
+        fill="none" stroke="#C8A87C" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

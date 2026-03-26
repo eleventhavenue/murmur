@@ -75,6 +75,13 @@ class TTSServer:
     def handle_synthesize(self, text: str, voice: str, speed: float):
         self._stop_requested = False
         try:
+            # Clean surrogates and non-encodable chars from clipboard text
+            text = text.encode("utf-8", errors="replace").decode("utf-8")
+            text = text.strip()
+            if not text:
+                respond({"type": "error", "message": "No readable text"})
+                return
+
             self._ensure_loaded()
 
             t0 = time.time()

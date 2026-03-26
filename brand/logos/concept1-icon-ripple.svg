@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">Murmur Logo — The Ripple</title>
+  <defs>
+    <style>
+      .gold { fill: #C8A87C; }
+      .gold-dim { fill: #C8A87C; opacity: 0.5; }
+      .gold-faint { fill: #C8A87C; opacity: 0.25; }
+    </style>
+  </defs>
+  <!-- Dark background circle -->
+  <circle cx="256" cy="256" r="240" fill="#161618"/>
+  <!-- Sound ripples emanating from left-center — three concentric arcs -->
+  <!-- Inner arc (strongest) -->
+  <path class="gold" d="M200 196 A85 85 0 0 1 200 316" fill="none" stroke="#C8A87C" stroke-width="20" stroke-linecap="round"/>
+  <!-- Middle arc -->
+  <path class="gold-dim" d="M240 156 A140 140 0 0 1 240 356" fill="none" stroke="#C8A87C" stroke-width="16" stroke-linecap="round" opacity="0.55"/>
+  <!-- Outer arc -->
+  <path class="gold-faint" d="M276 120 A190 190 0 0 1 276 392" fill="none" stroke="#C8A87C" stroke-width="12" stroke-linecap="round" opacity="0.25"/>
+  <!-- Origin dot -->
+  <circle cx="168" cy="256" r="22" fill="#C8A87C"/>
+</svg>

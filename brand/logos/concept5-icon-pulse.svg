@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">Murmur Logo — The Pulse</title>
+  <!-- Dark background circle -->
+  <circle cx="256" cy="256" r="240" fill="#161618"/>
+  <!-- Audio pulse — flat line that spikes in the center like a voice -->
+  <path d="M96 256 L176 256 L196 256 L216 192 L240 320 L264 172 L288 340 L312 200 L332 256 L336 256 L416 256"
+        fill="none" stroke="#C8A87C" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -16,11 +16,11 @@ pub fn capture_selection(app: &AppHandle) -> Option<String> {
 fn simulate_copy() {
     use windows::Win32::UI::Input::KeyboardAndMouse::*;
 
-    // Release Alt and N (user is holding Ctrl+Alt+N when hotkey fires)
+    // Release Alt and M (user is holding Ctrl+Alt+M when hotkey fires)
     // Then press Ctrl+C, then release
     let inputs = [
         key_input(VK_MENU, true),      // release Alt
-        key_input(VK_N, true),         // release N
+        key_input(VK_M, true),         // release M
         key_input(VK_CONTROL, false),  // press Ctrl
         key_input(VK_C, false),        // press C
         key_input(VK_C, true),         // release C

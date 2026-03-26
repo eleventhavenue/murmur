@@ -1,5 +1,6 @@
 mod audio;
 mod clipboard;
+mod device;
 mod hotkey;
 mod sidecar;
 mod tray;
@@ -25,6 +26,7 @@ pub fn run() {
             audio::audio_stop,
             audio::audio_set_speed,
             audio::audio_mark_done,
+            device::get_device_profile,
         ])
         .setup(|app| {
             let handle = app.handle().clone();
