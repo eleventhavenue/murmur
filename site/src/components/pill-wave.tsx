@@ -15,9 +15,10 @@ export function PillWave() {
       {heights.map((h, i) => (
         <div
           key={i}
-          className="w-[3px] rounded-full bg-[var(--color-accent)]"
+          className="w-[3px] rounded-full"
           style={{
             height: `${h}%`,
+            background: "var(--color-accent)",
             transformOrigin: "center",
             animation:
               i >= 7 ? "none" : `pillPulse 2s infinite ease-in-out`,

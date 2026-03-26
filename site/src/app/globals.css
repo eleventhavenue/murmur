@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-@theme inline {
+/* ========== Default theme (Serif) ========== */
+:root,
+[data-theme="serif"] {
   --color-bg: #f3f2ec;
   --color-ink: #1f3a33;
   --color-ink2: #aba697;
@@ -8,7 +10,90 @@
   --color-accent: #dcd444;
   --color-surface: #1a1a1a;
   --color-surface-text: #ffffff;
-  --color-bone: #f3f2ec;
+  --font-display-family: 'Instrument Serif', serif;
+  --font-display-weight: 400;
+  --font-display-style: normal;
+  --font-display-spacing: -0.03em;
+  --bar-color: #1f3a33;
+  --bar-accent: #dcd444;
+}
+
+/* ========== Kinetic ========== */
+[data-theme="kinetic"] {
+  --color-bg: #F7F6F4;
+  --color-ink: #1C1C1A;
+  --color-ink2: #8A8A85;
+  --color-ink3: #D4D4D0;
+  --color-accent: #1C1C1A;
+  --color-surface: #1C1C1A;
+  --color-surface-text: #F7F6F4;
+  --font-display-family: 'Inter', sans-serif;
+  --font-display-weight: 700;
+  --font-display-style: normal;
+  --font-display-spacing: -0.04em;
+  --bar-color: #1C1C1A;
+  --bar-accent: #1C1C1A;
+}
+
+/* ========== Lilac ========== */
+[data-theme="lilac"] {
+  --color-bg: #f5f3f8;
+  --color-ink: #1a1425;
+  --color-ink2: rgba(26,20,37,0.4);
+  --color-ink3: rgba(26,20,37,0.08);
+  --color-accent: #9B8EC4;
+  --color-surface: #1a1425;
+  --color-surface-text: #f5f3f8;
+  --font-display-family: 'Instrument Serif', serif;
+  --font-display-weight: 400;
+  --font-display-style: normal;
+  --font-display-spacing: -0.03em;
+  --bar-color: #9B8EC4;
+  --bar-accent: #C4B8E8;
+}
+
+/* ========== Editorial ========== */
+[data-theme="editorial"] {
+  --color-bg: #f3f2ec;
+  --color-ink: #1f3a33;
+  --color-ink2: #aba697;
+  --color-ink3: rgba(31,58,51,0.1);
+  --color-accent: #dcd444;
+  --color-surface: #aba697;
+  --color-surface-text: #f3f2ec;
+  --font-display-family: 'Instrument Serif', serif;
+  --font-display-weight: 400;
+  --font-display-style: normal;
+  --font-display-spacing: -0.02em;
+  --bar-color: #1f3a33;
+  --bar-accent: #dcd444;
+}
+
+/* ========== Italic ========== */
+[data-theme="italic"] {
+  --color-bg: #f3f2ec;
+  --color-ink: #1f3a33;
+  --color-ink2: #aba697;
+  --color-ink3: rgba(31,58,51,0.1);
+  --color-accent: #1f3a33;
+  --color-surface: #1f3a33;
+  --color-surface-text: #dcd444;
+  --font-display-family: 'Instrument Serif', serif;
+  --font-display-weight: 400;
+  --font-display-style: italic;
+  --font-display-spacing: -0.02em;
+  --bar-color: #1f3a33;
+  --bar-accent: #3d6e61;
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-ink: var(--color-ink);
+  --color-ink2: var(--color-ink2);
+  --color-ink3: var(--color-ink3);
+  --color-accent: var(--color-accent);
+  --color-surface: var(--color-surface);
+  --color-surface-text: var(--color-surface-text);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -17,11 +102,13 @@ body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: 'Inter', var(--font-sans), sans-serif;
+  transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-/* Instrument Serif for display text */
 .font-display {
-  font-family: 'Instrument Serif', serif;
-  font-weight: 400;
-  letter-spacing: -0.03em;
+  font-family: var(--font-display-family);
+  font-weight: var(--font-display-weight);
+  font-style: var(--font-display-style);
+  letter-spacing: var(--font-display-spacing);
+  transition: font-family 0.3s ease;
 }

@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { AuthButton } from "./auth-button";
+import { ThemeToggle } from "./theme-toggle";
 
 export function Nav() {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-10 py-5 backdrop-blur-xl bg-[var(--color-bg)]/80">
+    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-10 py-4 backdrop-blur-xl bg-[var(--color-bg)]/80">
       <Link href="/" className="font-display text-xl text-[var(--color-ink)] no-underline">
         murmur.
       </Link>
-      <div className="flex gap-8 items-center">
+
+      <ThemeToggle />
+
+      <div className="flex gap-6 items-center">
         <Link
           href="/docs"
           className="text-xs font-semibold uppercase tracking-widest text-[var(--color-ink2)] hover:text-[var(--color-ink)] transition-colors no-underline"
