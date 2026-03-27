@@ -20,26 +20,27 @@ export function ThemeToggle() {
   };
 
   return (
-    <div className="flex items-center gap-1.5 bg-black/5 rounded-full p-1.5">
+    <div className="flex items-center gap-3">
       {themes.map((t) => (
         <button
           key={t.id}
           onClick={() => handleTheme(t.id)}
           title={t.label}
           className={`
-            relative w-11 h-11 rounded-full flex items-center justify-center transition-all cursor-pointer
+            relative w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer
             ${active === t.id
-              ? "bg-white shadow-md scale-110"
-              : "hover:bg-white/50"
+              ? "opacity-100 scale-110"
+              : "opacity-40 hover:opacity-70"
             }
           `}
         >
           <Image
             src={t.icon}
             alt={t.label}
-            width={28}
-            height={28}
+            width={36}
+            height={36}
             className="object-contain"
+            unoptimized
           />
         </button>
       ))}
