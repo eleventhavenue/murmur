@@ -7,7 +7,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const OUTPUT_DIR = path.join(PROJECT_ROOT, 'public', 'theme-icons');
 
-const API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyAqabdqSnYuDGv14eFVlsZu_ivo4Gb9MWo';
+const API_KEY = process.env.GEMINI_API_KEY;
+if (!API_KEY) {
+  console.error('Error: GEMINI_API_KEY env var is required');
+  process.exit(1);
+}
 const MODEL = 'gemini-3-pro-image-preview';
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
