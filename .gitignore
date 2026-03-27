@@ -23,3 +23,9 @@ site/node_modules/
 site/.next/
 site/.env.local
 site/.vercel/
+site/scripts/
+
+# Secrets
+.env
+.env.local
+.env*.local
