@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">Murmur Logo — The Breath</title>
+  <!-- Dark background circle -->
+  <circle cx="256" cy="256" r="240" fill="#161618"/>
+  <!-- Abstract "m" as two flowing arcs — like breath rising -->
+  <!-- Left arc of the "m" -->
+  <path d="M156 320 Q156 180 220 180 Q284 180 256 260" fill="none" stroke="#C8A87C" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Right arc of the "m" -->
+  <path d="M256 260 Q228 340 292 180 Q356 180 356 320" fill="none" stroke="#C8A87C" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Subtle dot at the origin — the voice -->
+  <circle cx="156" cy="330" r="14" fill="#C8A87C" opacity="0.6"/>
+  <circle cx="356" cy="330" r="14" fill="#C8A87C" opacity="0.6"/>
+</svg>

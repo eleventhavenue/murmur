@@ -58,15 +58,49 @@ class TTSServer:
     def _ensure_loaded(self):
         if self.kokoro is not None:
             return
-        from kokoro_onnx import Kokoro
+        import onnxruntime as ort
+
         model_dir = get_model_dir()
         model_path = os.path.join(model_dir, "kokoro-v1.0.onnx")
         voices_path = os.path.join(model_dir, "voices-v1.0.bin")
-        t0 = time.time()
-        self.kokoro = Kokoro(model_path, voices_path)
-        dt = time.time() - t0
-        sys.stderr.write(f"[murmur] Model loaded in {dt:.1f}s\n")
+
+        # Use CPU provider — DirectML causes runtime errors with kokoro model
+        selected = ["CPUExecutionProvider"]
+        provider_name = "CPU"
+
+        sys.stderr.write(f"[murmur] Loading model with {provider_name}...\n")
         sys.stderr.flush()
+
+        t0 = time.time()
+
+        # Create ONNX session with optimizations
+        sess_options = ort.SessionOptions()
+        sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+        # Cache the optimized graph to disk for faster subsequent loads
+        cache_dir = os.path.join(os.path.expanduser("~"), ".murmur", "cache")
+        os.makedirs(cache_dir, exist_ok=True)
+        sess_options.optimized_model_filepath = os.path.join(cache_dir, "kokoro-optimized.onnx")
+
+        try:
+            session = ort.InferenceSession(model_path, sess_options, providers=selected)
+            from kokoro_onnx import Kokoro
+            self.kokoro = Kokoro.from_session(session, voices_path)
+        except Exception as e:
+            sys.stderr.write(f"[murmur] GPU failed ({e}), falling back to CPU\n")
+            sys.stderr.flush()
+            session = ort.InferenceSession(model_path, sess_options, providers=["CPUExecutionProvider"])
+            from kokoro_onnx import Kokoro
+            self.kokoro = Kokoro.from_session(session, voices_path)
+            provider_name = "CPU (fallback)"
+
+        dt = time.time() - t0
+        sys.stderr.write(f"[murmur] Model loaded in {dt:.1f}s ({provider_name})\n")
+        sys.stderr.flush()
+
+    def handle_warmup(self):
+        """Eagerly load the model so first synthesis is fast."""
+        self._ensure_loaded()
+        respond({"type": "ready"})
 
     def handle_list_voices(self):
         voices = []
@@ -102,9 +136,32 @@ class TTSServer:
         for bad, good in mojibake_map.items():
             text = text.replace(bad, good)
 
-        # Remove any remaining non-ASCII non-letter characters that kokoro might read
-        # Keep letters, numbers, basic punctuation, and common accented chars
-        text = re.sub(r'[^\w\s.,!?;:\'"()\-/&@%$€£]', ' ', text)
+        # Convert dashes to pauses
+        text = text.replace(' - ', ', ')
+        text = text.replace(' – ', ', ')
+        text = text.replace(' — ', ', ')
+        text = re.sub(r'(?<=\w)-(?=\w)', ' ', text)  # hyphenated-words → space
+
+        # Convert symbols to speakable equivalents
+        text = text.replace('/', ' ')
+        text = text.replace('&', ' and ')
+        text = text.replace('|', ', ')
+        text = text.replace('>', ' ')
+        text = text.replace('<', ' ')
+        text = re.sub(r'\(([^)]*)\)', r', \1, ', text)
+
+        # Currency/symbols — only convert when next to numbers
+        text = re.sub(r'\$(\d)', r'\1 dollars', text)
+        text = re.sub(r'€(\d)', r'\1 euros', text)
+        text = re.sub(r'£(\d)', r'\1 pounds', text)
+        text = re.sub(r'(\d)%', r'\1 percent', text)
+        text = re.sub(r'@(\w)', r'at \1', text)
+
+        # Remove stray currency/symbols that aren't next to numbers
+        text = re.sub(r'[$€£%@+=]', ' ', text)
+
+        # Remove any remaining non-speech characters
+        text = re.sub(r'[^\w\s.,!?;:\'"\\-]', ' ', text)
 
         # Remove markdown formatting
         text = re.sub(r'#{1,6}\s*', '', text)
@@ -161,32 +218,27 @@ class TTSServer:
 
             self._ensure_loaded()
 
-            # Split into sentences for more reliable synthesis
-            sentences = self._split_sentences(text)
-            total_chunks = 0
             t0 = time.time()
 
-            for sentence in sentences:
+            # Single create() call — faster than per-sentence
+            # kokoro handles sentence splitting internally
+            samples, sr = self.kokoro.create(text, voice=voice, speed=speed)
+
+            dt = time.time() - t0
+            sys.stderr.write(f"[murmur] Synthesized {len(samples)/sr:.1f}s audio in {dt:.1f}s\n")
+            sys.stderr.flush()
+
+            # Stream chunks of ~0.5 seconds for immediate playback
+            chunk_size = sr // 2
+            total_chunks = 0
+            for i in range(0, len(samples), chunk_size):
                 if self._stop_requested:
                     respond({"type": "stopped"})
                     return
-
-                samples, sr = self.kokoro.create(sentence, voice=voice, speed=speed)
-
-                # Stream chunks of ~0.5 seconds for immediate playback
-                chunk_size = sr // 2
-                for i in range(0, len(samples), chunk_size):
-                    if self._stop_requested:
-                        respond({"type": "stopped"})
-                        return
-                    chunk = samples[i:i + chunk_size]
-                    b64 = base64.b64encode(chunk.astype(np.float32).tobytes()).decode("ascii")
-                    respond({"type": "chunk", "samples": b64, "sr": int(sr)})
-                    total_chunks += 1
-
-            dt = time.time() - t0
-            sys.stderr.write(f"[murmur] Synthesized {len(sentences)} sentences in {dt:.1f}s\n")
-            sys.stderr.flush()
+                chunk = samples[i:i + chunk_size]
+                b64 = base64.b64encode(chunk.astype(np.float32).tobytes()).decode("ascii")
+                respond({"type": "chunk", "samples": b64, "sr": int(sr)})
+                total_chunks += 1
 
             respond({"type": "done", "total_chunks": total_chunks})
         except Exception as e:
@@ -209,7 +261,9 @@ class TTSServer:
                 continue
 
             action = cmd.get("cmd")
-            if action == "list_voices":
+            if action == "warmup":
+                self.handle_warmup()
+            elif action == "list_voices":
                 self.handle_list_voices()
             elif action == "synthesize":
                 self.handle_synthesize(

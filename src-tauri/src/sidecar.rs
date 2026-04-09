@@ -29,6 +29,7 @@ enum SidecarResponse {
 
 /// Commands sent from Tauri to the sidecar IO thread.
 enum SidecarCommand {
+    Warmup,
     Synthesize { text: String, voice: String, speed: f64 },
     Stop,
     ListVoices,
@@ -62,29 +63,38 @@ pub fn start(app: &AppHandle) -> Result<(), String> {
         }
     }
 
-    // Resolve paths — find sidecar relative to the exe
+    // Resolve paths — find sidecar
     let exe_dir = std::env::current_exe()
         .unwrap_or_default()
         .parent()
         .unwrap_or(std::path::Path::new("."))
         .to_path_buf();
 
-    // Strategy 1: Bundled PyInstaller exe (for installed users)
-    let bundled_exe = exe_dir.join("murmur-tts/murmur-tts.exe");
+    // Try Tauri resource directory (for installed users)
+    let resource_dir = app
+        .path()
+        .resource_dir()
+        .unwrap_or(exe_dir.clone());
+
+    // Strategy 1: Bundled PyInstaller exe
+    let bundled_paths = [
+        exe_dir.join("murmur-tts/murmur-tts.exe"),          // next to exe
+        resource_dir.join("murmur-tts/murmur-tts.exe"),     // in resource dir (installed)
+    ];
+    let bundled_exe = bundled_paths.iter().find(|p| p.exists());
 
     // Strategy 2: Python script (for dev)
-    let script_path = [
-        exe_dir.join("../../../sidecar/tts_server.py"),      // from target/release/ or target/debug/
+    let script_paths = [
+        exe_dir.join("../../../sidecar/tts_server.py"),      // from target/release/
         exe_dir.join("sidecar/tts_server.py"),                // next to exe
-    ]
-    .into_iter()
-    .find(|p| p.exists());
+    ];
+    let script_path = script_paths.iter().find(|p| p.exists());
 
     let mut cmd;
-    if bundled_exe.exists() {
+    if let Some(exe_path) = bundled_exe {
         // Use bundled PyInstaller exe — no Python needed
-        eprintln!("Sidecar: using bundled exe at {}", bundled_exe.display());
-        cmd = Command::new(&bundled_exe);
+        eprintln!("Sidecar: using bundled exe at {}", exe_path.display());
+        cmd = Command::new(exe_path);
     } else if let Some(script) = script_path {
         // Use Python script directly (dev mode)
         eprintln!("Sidecar: using script at {}", script.display());
@@ -123,6 +133,7 @@ pub fn start(app: &AppHandle) -> Result<(), String> {
                     serde_json::json!({ "cmd": "synthesize", "text": text, "voice": voice, "speed": speed })
                 }
                 SidecarCommand::Stop => serde_json::json!({ "cmd": "stop" }),
+                SidecarCommand::Warmup => serde_json::json!({ "cmd": "warmup" }),
                 SidecarCommand::ListVoices => serde_json::json!({ "cmd": "list_voices" }),
             };
             let mut line = serde_json::to_string(&json).unwrap();
@@ -184,9 +195,8 @@ pub fn start(app: &AppHandle) -> Result<(), String> {
         *guard = Some(tx);
     }
 
-    // Send warmup command — just list_voices to load the Python process
-    // Don't synthesize on startup as it produces unwanted audio
-    state.send(SidecarCommand::ListVoices).ok();
+    // Eagerly load the ONNX model so first Ctrl+Alt+M is fast
+    state.send(SidecarCommand::Warmup).ok();
 
     Ok(())
 }

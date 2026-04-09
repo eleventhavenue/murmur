@@ -15,6 +15,7 @@ export function useTTS(text: string, onFinished?: () => void) {
   });
   const [error, setError] = useState<string | null>(null);
   const [speed, setSpeedState] = useState(1.0);
+  const [voice, setVoice] = useState("af_sky");
 
   useEffect(() => {
     const unlistenChunk = listen<{ samples: string; sr: number }>(
@@ -61,6 +62,13 @@ export function useTTS(text: string, onFinished?: () => void) {
       },
     );
 
+    const unlistenVoice = listen<{ voice: string }>(
+      "voice-changed",
+      (event) => {
+        setVoice(event.payload.voice);
+      },
+    );
+
     return () => {
       unlistenChunk.then((fn) => fn());
       unlistenDone.then((fn) => fn());
@@ -68,11 +76,13 @@ export function useTTS(text: string, onFinished?: () => void) {
       unlistenStopped.then((fn) => fn());
       unlistenSynthStopped.then((fn) => fn());
       unlistenError.then((fn) => fn());
+      unlistenVoice.then((fn) => fn());
     };
   }, [onFinished]);
 
   const play = useCallback(
-    async (voice: string = "af_sky") => {
+    async (voiceOverride?: string) => {
+      const selectedVoice = voiceOverride || voice;
       // Stop any current playback first
       await invoke("audio_stop").catch(() => {});
       await invoke("stop_synthesis").catch(() => {});
@@ -80,14 +90,14 @@ export function useTTS(text: string, onFinished?: () => void) {
       setError(null);
       setState((s) => ({ ...s, status: "loading", progress: 0 }));
       try {
-        await invoke("synthesize", { text, voice, speed });
+        await invoke("synthesize", { text, voice: selectedVoice, speed });
       } catch (e) {
         console.error("Synthesis error:", e);
         setError(String(e));
         setState((s) => ({ ...s, status: "idle" }));
       }
     },
-    [text, speed],
+    [text, speed, voice],
   );
 
   const pause = useCallback(async () => {
@@ -123,5 +133,5 @@ export function useTTS(text: string, onFinished?: () => void) {
     await setSpeed(next);
   }, [speed, setSpeed]);
 
-  return { state, error, speed, play, pause, resume, stop, hide, setSpeed, cycleSpeed };
+  return { state, error, speed, voice, play, pause, resume, stop, hide, setSpeed, cycleSpeed };
 }

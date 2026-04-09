@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">Murmur Logo — The Quotation Wave</title>
+  <!-- Dark background circle -->
+  <circle cx="256" cy="256" r="240" fill="#161618"/>
+  <!-- Left quote mark that dissolves into a wave -->
+  <path d="M168 200 Q168 160 200 160 Q232 160 232 200 Q232 248 188 272 L172 296"
+        fill="none" stroke="#C8A87C" stroke-width="20" stroke-linecap="round"/>
+  <!-- Right quote mark that dissolves into a wave -->
+  <path d="M268 200 Q268 160 300 160 Q332 160 332 200 Q332 248 288 272"
+        fill="none" stroke="#C8A87C" stroke-width="20" stroke-linecap="round"/>
+  <!-- The wave extending from the right quote — speech emerging -->
+  <path d="M316 252 Q340 232 340 268 Q340 304 364 284 Q388 264 388 300"
+        fill="none" stroke="#C8A87C" stroke-width="14" stroke-linecap="round" opacity="0.6"/>
+</svg>

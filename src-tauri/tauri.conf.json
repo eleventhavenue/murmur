@@ -15,8 +15,8 @@
       {
         "label": "popup",
         "title": "Murmur",
-        "width": 420,
-        "height": 64,
+        "width": 480,
+        "height": 68,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
@@ -52,6 +52,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "resources": [
+      "binaries/murmur-tts/**/*"
     ]
   }
 }
