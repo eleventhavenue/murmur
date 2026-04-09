@@ -13,7 +13,7 @@ export function HeroViz() {
     const gap = 1.5;
 
     const theme = document.documentElement.getAttribute("data-theme") || "serif";
-    const useMask = theme === "kinetic" || theme === "italic";
+    const useMask = theme === "kinetic";
 
     let rects = "";
     for (let i = 0; i < numBars; i++) {
@@ -33,14 +33,9 @@ export function HeroViz() {
 
     let svg = "";
     if (useMask) {
-      const isItalic = theme === "italic";
-      const fontFamily = isItalic ? "'Instrument Serif', serif" : "Inter, sans-serif";
-      const fontWeight = isItalic ? "400" : "700";
-      const fontSize = isItalic ? "160px" : "180px";
-      const fontStyle = isItalic ? 'font-style="italic"' : "";
       svg = `<defs>
         <clipPath id="heroMask">
-          <text x="50%" y="75%" text-anchor="middle" font-family="${fontFamily}" font-weight="${fontWeight}" font-size="${fontSize}" letter-spacing="-0.02em" ${fontStyle}>murmur.</text>
+          <text x="50%" y="75%" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="180px" letter-spacing="-0.04em">murmur.</text>
         </clipPath>
       </defs>
       <g clip-path="url(#heroMask)">${rects}</g>`;

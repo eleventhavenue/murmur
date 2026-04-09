@@ -13,7 +13,7 @@
   --font-display-family: 'Instrument Serif', serif;
   --font-display-weight: 400;
   --font-display-style: normal;
-  --font-display-spacing: -0.03em;
+  --font-display-spacing: -0.02em;
   --bar-color: #1f3a33;
   --bar-accent: #dcd444;
 }
@@ -47,43 +47,9 @@
   --font-display-family: 'Instrument Serif', serif;
   --font-display-weight: 400;
   --font-display-style: normal;
-  --font-display-spacing: -0.03em;
+  --font-display-spacing: -0.02em;
   --bar-color: #9B8EC4;
   --bar-accent: #C4B8E8;
-}
-
-/* ========== Editorial ========== */
-[data-theme="editorial"] {
-  --color-bg: #f3f2ec;
-  --color-ink: #1f3a33;
-  --color-ink2: #aba697;
-  --color-ink3: rgba(31,58,51,0.1);
-  --color-accent: #dcd444;
-  --color-surface: #aba697;
-  --color-surface-text: #f3f2ec;
-  --font-display-family: 'Instrument Serif', serif;
-  --font-display-weight: 400;
-  --font-display-style: normal;
-  --font-display-spacing: -0.02em;
-  --bar-color: #1f3a33;
-  --bar-accent: #dcd444;
-}
-
-/* ========== Italic ========== */
-[data-theme="italic"] {
-  --color-bg: #f3f2ec;
-  --color-ink: #1f3a33;
-  --color-ink2: #aba697;
-  --color-ink3: rgba(31,58,51,0.1);
-  --color-accent: #1f3a33;
-  --color-surface: #1f3a33;
-  --color-surface-text: #dcd444;
-  --font-display-family: 'Instrument Serif', serif;
-  --font-display-weight: 400;
-  --font-display-style: italic;
-  --font-display-spacing: -0.02em;
-  --bar-color: #1f3a33;
-  --bar-accent: #3d6e61;
 }
 
 @theme inline {

@@ -7,8 +7,6 @@ const themes = [
   { id: "kinetic", label: "Kinetic", icon: "/theme-icons/kinetic.png" },
   { id: "serif", label: "Serif", icon: "/theme-icons/serif.png" },
   { id: "lilac", label: "Lilac", icon: "/theme-icons/lilac.png" },
-  { id: "editorial", label: "Editorial", icon: "/theme-icons/editorial.png" },
-  { id: "italic", label: "Italic", icon: "/theme-icons/italic.png" },
 ];
 
 export function ThemeToggle() {
