@@ -15,8 +15,8 @@
       {
         "label": "popup",
         "title": "Murmur",
-        "width": 480,
-        "height": 68,
+        "width": 420,
+        "height": 64,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
@@ -38,7 +38,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/ayot-labs/murmur/releases/latest/download/latest.json"
+        "https://github.com/eleventhavenue/murmur/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDg1RDQ1RkVDOTMyMDY3QkQKUldTOVp5Q1Q3Ri9VaGFFS29SaUhaNUNUS2ttcG5uRW56Tm1XS2pqRGFLckVLTlVlb3F2c1Roc2oK"
     }

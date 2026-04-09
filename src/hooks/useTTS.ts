@@ -73,6 +73,10 @@ export function useTTS(text: string, onFinished?: () => void) {
 
   const play = useCallback(
     async (voice: string = "af_sky") => {
+      // Stop any current playback first
+      await invoke("audio_stop").catch(() => {});
+      await invoke("stop_synthesis").catch(() => {});
+
       setError(null);
       setState((s) => ({ ...s, status: "loading", progress: 0 }));
       try {

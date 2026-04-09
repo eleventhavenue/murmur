@@ -1,0 +1,22 @@
+[murmur] Model loaded in 1.1s
+Traceback (most recent call last):
+  File "C:\Users\12895\tts-studio\murmur\sidecar\tts_server.py", line 162, in handle_synthesize
+    respond({"type": "chunk", "samples": b64, "sr": int(sr)})
+  File "C:\Users\12895\tts-studio\murmur\sidecar\tts_server.py", line 46, in respond
+    sys.stdout.write(json.dumps(data) + "\n")
+OSError: [Errno 22] Invalid argument
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\12895\tts-studio\murmur\sidecar\tts_server.py", line 206, in <module>
+    server.run()
+  File "C:\Users\12895\tts-studio\murmur\sidecar\tts_server.py", line 193, in run
+    self.handle_synthesize(
+  File "C:\Users\12895\tts-studio\murmur\sidecar\tts_server.py", line 171, in handle_synthesize
+    respond({"type": "error", "message": str(e)})
+  File "C:\Users\12895\tts-studio\murmur\sidecar\tts_server.py", line 47, in respond
+    sys.stdout.flush()
+OSError: [Errno 22] Invalid argument
+Exception ignored in: <_io.TextIOWrapper name='<stdout>' mode='w' encoding='cp1252'>
+OSError: [Errno 22] Invalid argument

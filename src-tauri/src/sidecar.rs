@@ -62,21 +62,44 @@ pub fn start(app: &AppHandle) -> Result<(), String> {
         }
     }
 
-    // Resolve paths
-    let script_path = std::env::current_dir()
+    // Resolve paths — find sidecar relative to the exe
+    let exe_dir = std::env::current_exe()
         .unwrap_or_default()
-        .join("../sidecar/tts_server.py");
+        .parent()
+        .unwrap_or(std::path::Path::new("."))
+        .to_path_buf();
 
-    let venv_python = std::path::PathBuf::from("C:/Users/12895/tts-studio/.venv/Scripts/python.exe");
-    let python = if venv_python.exists() {
-        venv_python
+    // Strategy 1: Bundled PyInstaller exe (for installed users)
+    let bundled_exe = exe_dir.join("murmur-tts/murmur-tts.exe");
+
+    // Strategy 2: Python script (for dev)
+    let script_path = [
+        exe_dir.join("../../../sidecar/tts_server.py"),      // from target/release/ or target/debug/
+        exe_dir.join("sidecar/tts_server.py"),                // next to exe
+    ]
+    .into_iter()
+    .find(|p| p.exists());
+
+    let mut cmd;
+    if bundled_exe.exists() {
+        // Use bundled PyInstaller exe — no Python needed
+        eprintln!("Sidecar: using bundled exe at {}", bundled_exe.display());
+        cmd = Command::new(&bundled_exe);
+    } else if let Some(script) = script_path {
+        // Use Python script directly (dev mode)
+        eprintln!("Sidecar: using script at {}", script.display());
+        let venv_python = std::path::PathBuf::from("C:/Users/12895/tts-studio/.venv/Scripts/python.exe");
+        let python = if venv_python.exists() {
+            venv_python
+        } else {
+            std::path::PathBuf::from("python")
+        };
+        cmd = Command::new(&python);
+        cmd.arg(&script);
     } else {
-        std::path::PathBuf::from("python")
-    };
-
-    let mut cmd = Command::new(&python);
-    cmd.arg(&script_path)
-        .stdin(Stdio::piped())
+        return Err("Sidecar not found — neither bundled exe nor Python script available".into());
+    }
+    cmd.stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
@@ -161,12 +184,9 @@ pub fn start(app: &AppHandle) -> Result<(), String> {
         *guard = Some(tx);
     }
 
-    // Send warmup command immediately so model loads in background
-    state.send(SidecarCommand::Synthesize {
-        text: "ready".into(),
-        voice: "af_sky".into(),
-        speed: 1.0,
-    }).ok();
+    // Send warmup command — just list_voices to load the Python process
+    // Don't synthesize on startup as it produces unwanted audio
+    state.send(SidecarCommand::ListVoices).ok();
 
     Ok(())
 }

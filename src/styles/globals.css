@@ -3,7 +3,7 @@
 @theme {
   --color-gold: #C8A87C;
   --color-gold-dim: #A08060;
-  --color-surface: #161618;
+  --color-surface: #131315;
   --color-surface-hover: #1E1E22;
   --color-text-primary: #E8E8EC;
   --color-text-secondary: #8A8A94;
@@ -15,4 +15,13 @@ html, body, #root {
   background: transparent;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
 }
