@@ -1,19 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 
 export function HeroViz() {
   const ref = useRef<HTMLDivElement>(null);
 
-  const buildViz = useCallback(() => {
+  useEffect(() => {
     if (!ref.current) return;
-    const numBars = 100;
-    const vw = 1000, vh = 200;
+    const numBars = 120;
+    const vw = 1000, vh = 240;
     const bw = vw / numBars;
     const gap = 1.5;
-
-    const theme = document.documentElement.getAttribute("data-theme") || "serif";
-    const useMask = theme === "kinetic";
 
     let rects = "";
     for (let i = 0; i < numBars; i++) {
@@ -26,23 +23,13 @@ export function HeroViz() {
       const dur = 3.2 + Math.random() * 0.8;
       const smin = 0.1 + Math.abs(fast) * 0.2;
       const smax = 0.4 + Math.abs(combined) * 0.6;
-      const isAccent = (i % 5 === 0) && !useMask;
+      // Every 5th bar is yellow accent
+      const isAccent = i % 5 === 0;
       const fill = isAccent ? "var(--bar-accent)" : "var(--bar-color)";
       rects += `<rect fill="${fill}" x="${x}" y="0" width="${bw - gap}" height="100%" style="transform-box:fill-box;transform-origin:center;animation:heroWave ${dur}s cubic-bezier(0.4,0,0.2,1) infinite alternate;animation-delay:${del}s;--smin:${smin};--smax:${smax}"/>`;
     }
 
-    let svg = "";
-    if (useMask) {
-      svg = `<defs>
-        <clipPath id="heroMask">
-          <text x="50%" y="75%" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="180px" letter-spacing="-0.04em">murmur.</text>
-        </clipPath>
-      </defs>
-      <g clip-path="url(#heroMask)">${rects}</g>`;
-    } else {
-      svg = rects;
-    }
-
+    // Always use text mask — bars inside "murmur." using Instrument Serif
     ref.current.innerHTML = `
       <style>
         @keyframes heroWave {
@@ -50,29 +37,21 @@ export function HeroViz() {
           100% { transform: scaleY(var(--smax, 1)); }
         }
       </style>
-      <svg viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="xMidYMid meet" class="w-full h-full">${svg}</svg>
+      <svg viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="xMidYMid meet" class="w-full h-full">
+        <defs>
+          <clipPath id="heroMask">
+            <text x="50%" y="70%" text-anchor="middle" font-family="'Instrument Serif', serif" font-weight="400" font-size="220px" letter-spacing="-0.02em">murmur.</text>
+          </clipPath>
+        </defs>
+        <g clip-path="url(#heroMask)">${rects}</g>
+      </svg>
     `;
   }, []);
-
-  useEffect(() => {
-    buildViz();
-
-    // Re-build when theme changes
-    const observer = new MutationObserver((mutations) => {
-      for (const m of mutations) {
-        if (m.attributeName === "data-theme") {
-          buildViz();
-        }
-      }
-    });
-    observer.observe(document.documentElement, { attributes: true });
-    return () => observer.disconnect();
-  }, [buildViz]);
 
   return (
     <div
       ref={ref}
-      className="w-full max-w-[800px] h-[200px] overflow-hidden mb-12"
+      className="w-full max-w-[900px] h-[240px] overflow-hidden mb-8"
     />
   );
 }

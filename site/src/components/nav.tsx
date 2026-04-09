@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { AuthButton } from "./auth-button";
-import { ThemeToggle } from "./theme-toggle";
 
 export function Nav() {
   return (
@@ -8,8 +7,6 @@ export function Nav() {
       <Link href="/" className="font-display text-xl text-[var(--color-ink)] no-underline">
         murmur.
       </Link>
-
-      <ThemeToggle />
 
       <div className="flex gap-6 items-center">
         <Link

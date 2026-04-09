@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { HeroViz } from "@/components/hero-viz";
-import { HeroTitle } from "@/components/hero-title";
 import { PillWave } from "@/components/pill-wave";
 
 const features = [
@@ -26,7 +25,6 @@ export default function Home() {
         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-accent)] mb-3">
           Open-source TTS Engine
         </span>
-        <HeroTitle />
         <HeroViz />
         <p className="text-base text-[var(--color-ink2)] max-w-[440px] leading-relaxed mb-12">
           Highlight any text. Press a hotkey. Hear it read beautifully — right
@@ -35,13 +33,13 @@ export default function Home() {
 
         {/* Floating pill */}
         <div className="inline-flex items-center gap-4 bg-[var(--color-surface)] rounded-[14px] px-5 py-3.5 shadow-[0_20px_40px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 transition-transform cursor-pointer">
-          <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 fill-[var(--color-surface-text)]" viewBox="0 0 24 24">
             <path d="M6 4h4v16H6zm8 0h4v16h-4z" />
           </svg>
           <PillWave />
-          <span className="text-[10px] font-semibold text-white/40 tabular-nums">1.2x</span>
-          <span className="text-xs font-semibold text-white tracking-wide">Playing</span>
-          <span className="text-[10px] font-bold text-white/25 bg-white/8 px-2 py-1 rounded">
+          <span className="text-[10px] font-semibold text-[var(--color-surface-text)]/40 tabular-nums">1.2x</span>
+          <span className="text-xs font-semibold text-[var(--color-surface-text)] tracking-wide">Playing</span>
+          <span className="text-[10px] font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/10 px-2 py-1 rounded">
             Ctrl+Alt+M
           </span>
         </div>

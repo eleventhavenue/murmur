@@ -1,55 +1,20 @@
 @import "tailwindcss";
 
-/* ========== Default theme (Serif) ========== */
-:root,
-[data-theme="serif"] {
+/* ========== Murmur — One Brand ========== */
+:root {
   --color-bg: #f3f2ec;
   --color-ink: #1f3a33;
   --color-ink2: #aba697;
   --color-ink3: rgba(31,58,51,0.1);
   --color-accent: #dcd444;
-  --color-surface: #1a1a1a;
-  --color-surface-text: #ffffff;
+  --color-surface: #1f3a33;
+  --color-surface-text: #f3f2ec;
   --font-display-family: 'Instrument Serif', serif;
   --font-display-weight: 400;
   --font-display-style: normal;
   --font-display-spacing: -0.02em;
   --bar-color: #1f3a33;
   --bar-accent: #dcd444;
-}
-
-/* ========== Kinetic ========== */
-[data-theme="kinetic"] {
-  --color-bg: #F7F6F4;
-  --color-ink: #1C1C1A;
-  --color-ink2: #8A8A85;
-  --color-ink3: #D4D4D0;
-  --color-accent: #1C1C1A;
-  --color-surface: #1C1C1A;
-  --color-surface-text: #F7F6F4;
-  --font-display-family: 'Inter', sans-serif;
-  --font-display-weight: 700;
-  --font-display-style: normal;
-  --font-display-spacing: -0.04em;
-  --bar-color: #1C1C1A;
-  --bar-accent: #1C1C1A;
-}
-
-/* ========== Lilac ========== */
-[data-theme="lilac"] {
-  --color-bg: #f5f3f8;
-  --color-ink: #1a1425;
-  --color-ink2: rgba(26,20,37,0.4);
-  --color-ink3: rgba(26,20,37,0.08);
-  --color-accent: #9B8EC4;
-  --color-surface: #1a1425;
-  --color-surface-text: #f5f3f8;
-  --font-display-family: 'Instrument Serif', serif;
-  --font-display-weight: 400;
-  --font-display-style: normal;
-  --font-display-spacing: -0.02em;
-  --bar-color: #9B8EC4;
-  --bar-accent: #C4B8E8;
 }
 
 @theme inline {
