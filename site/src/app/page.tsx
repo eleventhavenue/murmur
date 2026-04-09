@@ -147,9 +147,9 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <span className="block text-center py-3 rounded-lg text-xs font-bold uppercase tracking-wide bg-[var(--color-surface)] text-[var(--color-surface-text)] cursor-default opacity-60">
-                Coming Soon
-              </span>
+              <Link href="mailto:tunde@nashlabs.ca?subject=Murmur%20Pro%20Interest" className="block text-center py-3 rounded-lg text-xs font-bold uppercase tracking-wide bg-[var(--color-surface)] text-[var(--color-surface-text)] no-underline hover:opacity-90 transition-opacity">
+                Get in Touch
+              </Link>
             </div>
             {/* Pro+ */}
             <div className="border border-[var(--color-ink3)] rounded-xl p-9 flex flex-col">
@@ -163,9 +163,9 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <span className="block text-center py-3 rounded-lg text-xs font-bold uppercase tracking-wide border border-[var(--color-ink3)] text-[var(--color-ink)] cursor-default opacity-60">
-                Coming Soon
-              </span>
+              <Link href="mailto:tunde@nashlabs.ca?subject=Murmur%20Pro%2B%20Interest" className="block text-center py-3 rounded-lg text-xs font-bold uppercase tracking-wide border border-[var(--color-ink3)] text-[var(--color-ink)] hover:bg-[var(--color-ink)] hover:text-[var(--color-bg)] transition-all no-underline">
+                Get in Touch
+              </Link>
             </div>
           </div>
         </div>
