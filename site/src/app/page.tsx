@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HeroViz } from "@/components/hero-viz";
+import { HeroTitle } from "@/components/hero-title";
 import { PillWave } from "@/components/pill-wave";
 
 const features = [
@@ -25,9 +26,7 @@ export default function Home() {
         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-accent)] mb-3">
           Open-source TTS Engine
         </span>
-        <h1 className="font-display text-[clamp(64px,12vw,140px)] leading-[0.9] text-[var(--color-ink)] mb-6">
-          murmur.
-        </h1>
+        <HeroTitle />
         <p className="text-base text-[var(--color-ink2)] max-w-[440px] leading-relaxed mb-12">
           Highlight any text. Press a hotkey. Hear it read beautifully — right
           on your device, no internet needed.
