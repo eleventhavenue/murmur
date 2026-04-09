@@ -27,12 +27,11 @@ export default function Home() {
           Open-source TTS Engine
         </span>
         <HeroTitle />
+        <HeroViz />
         <p className="text-base text-[var(--color-ink2)] max-w-[440px] leading-relaxed mb-12">
           Highlight any text. Press a hotkey. Hear it read beautifully — right
           on your device, no internet needed.
         </p>
-
-        <HeroViz />
 
         {/* Floating pill */}
         <div className="inline-flex items-center gap-4 bg-[var(--color-surface)] rounded-[14px] px-5 py-3.5 shadow-[0_20px_40px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 transition-transform cursor-pointer">
