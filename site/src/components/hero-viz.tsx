@@ -19,8 +19,8 @@ export function HeroViz() {
       const slow = Math.sin(nx * Math.PI * 2);
       const fast = Math.sin(nx * Math.PI * 6) * 0.5;
       const combined = (slow + fast) / 1.5;
-      const del = nx * -4;
-      const dur = 3.2 + Math.random() * 0.8;
+      const del = nx * -6;
+      const dur = 5.5 + Math.random() * 1.5;
       const smin = 0.1 + Math.abs(fast) * 0.2;
       const smax = 0.4 + Math.abs(combined) * 0.6;
       // Every 5th bar is yellow accent
