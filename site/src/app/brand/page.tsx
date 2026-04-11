@@ -1,31 +1,60 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useRef } from "react";
 
 const colors = [
-  { name: "Ink", hex: "#1f3a33", text: "white", desc: "Primary text, headings, controls" },
+  { name: "Ink", hex: "#1f3a33", text: "#f3f2ec", desc: "Primary — text, surfaces, icons" },
   { name: "Bone", hex: "#f3f2ec", text: "#1f3a33", desc: "Background" },
-  { name: "Yellow", hex: "#dcd444", text: "#1f3a33", desc: "Accent, CTAs, highlights" },
-  { name: "Sand", hex: "#aba697", text: "white", desc: "Secondary text, muted elements" },
-  { name: "Surface", hex: "#1a1a1a", text: "white", desc: "Dark UI surfaces, buttons" },
-  { name: "Lilac", hex: "#9B8EC4", text: "white", desc: "Alternative accent (Lilac theme)" },
+  { name: "Yellow", hex: "#dcd444", text: "#1f3a33", desc: "Accent — highlights, CTAs" },
+  { name: "Sand", hex: "#aba697", text: "#f3f2ec", desc: "Muted — secondary text, borders" },
 ];
 
-const logos = [
-  { name: "The Ripple", file: "concept1-icon-ripple", desc: "Sound waves from a point — the visual shape of a whisper spreading" },
-  { name: "The Breath", file: "concept2-icon-breath", desc: "Flowing 'm' letterform — like a breath rising" },
-  { name: "The Quote Wave", file: "concept3-icon-quotewave", desc: "Quotation marks dissolving into sound waves" },
-  { name: "The Waveform M", file: "concept4-icon-waveform-m", desc: "M as audio waveform — distinctive, scales well" },
-  { name: "The Pulse", file: "concept5-icon-pulse", desc: "Audio heartbeat — ultra-minimal, technical" },
-];
+function BrandMark() {
+  const ref = useRef<HTMLDivElement>(null);
 
-const combined = [
-  { name: "Combined — Ripple", file: "combined-ripple" },
-  { name: "Combined — Pulse", file: "combined-pulse" },
-];
+  useEffect(() => {
+    if (!ref.current) return;
+    const numBars = 120;
+    const vw = 1000, vh = 240;
+    const bw = vw / numBars;
+    const gap = 1.5;
 
-const wordmarks = [
-  { name: "Wordmark (Light)", file: "wordmark-light", bg: "#1a1a1a" },
-  { name: "Wordmark (Gold)", file: "wordmark-gold", bg: "#1a1a1a" },
-];
+    let rects = "";
+    for (let i = 0; i < numBars; i++) {
+      const x = i * bw;
+      const nx = i / numBars;
+      const slow = Math.sin(nx * Math.PI * 2);
+      const fast = Math.sin(nx * Math.PI * 6) * 0.5;
+      const combined = (slow + fast) / 1.5;
+      const del = nx * -6;
+      const dur = 5.5 + Math.random() * 1.5;
+      const smin = 0.1 + Math.abs(fast) * 0.2;
+      const smax = 0.4 + Math.abs(combined) * 0.6;
+      const isAccent = i % 5 === 0;
+      const fill = isAccent ? "#dcd444" : "#1f3a33";
+      rects += `<rect fill="${fill}" x="${x}" y="0" width="${bw - gap}" height="100%" style="transform-box:fill-box;transform-origin:center;animation:brandWave ${dur}s cubic-bezier(0.4,0,0.2,1) infinite alternate;animation-delay:${del}s;--smin:${smin};--smax:${smax}"/>`;
+    }
+
+    ref.current.innerHTML = `
+      <style>
+        @keyframes brandWave {
+          0% { transform: scaleY(var(--smin, 0.15)); }
+          100% { transform: scaleY(var(--smax, 1)); }
+        }
+      </style>
+      <svg viewBox="0 0 ${vw} ${vh}" preserveAspectRatio="xMidYMid meet" class="w-full h-full">
+        <defs>
+          <clipPath id="brandMask">
+            <text x="50%" y="70%" text-anchor="middle" font-family="'Instrument Serif', serif" font-weight="400" font-size="220px" letter-spacing="-0.02em">murmur.</text>
+          </clipPath>
+        </defs>
+        <g clip-path="url(#brandMask)">${rects}</g>
+      </svg>
+    `;
+  }, []);
+
+  return <div ref={ref} className="w-full max-w-[800px] h-[200px] overflow-hidden" />;
+}
 
 export default function BrandPage() {
   return (
@@ -37,12 +66,23 @@ export default function BrandPage() {
         Murmur Brand.
       </h1>
       <p className="text-base text-[var(--color-ink2)] max-w-[500px] leading-relaxed mb-16">
-        Everything you need to represent Murmur. Download assets, reference colors, and follow our guidelines.
+        One cohesive identity. Download assets, reference colors, follow the guidelines.
       </p>
+
+      {/* The Mark */}
+      <div className="mb-20">
+        <h2 className="text-lg font-bold text-[var(--color-ink)] mb-2">The Mark</h2>
+        <p className="text-[13px] text-[var(--color-ink2)] mb-6">
+          An animated waveform flowing inside an Instrument Serif wordmark. The bars and the letters are one.
+        </p>
+        <div className="border border-[var(--color-ink3)] rounded-xl p-12 flex items-center justify-center bg-[var(--color-bg)]">
+          <BrandMark />
+        </div>
+      </div>
 
       {/* Brand Personality */}
       <div className="mb-20">
-        <h2 className="text-lg font-bold text-[var(--color-ink)] mb-4">Brand Personality</h2>
+        <h2 className="text-lg font-bold text-[var(--color-ink)] mb-4">Personality</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {["Quiet", "Intimate", "Elegant", "Premium"].map((word) => (
             <div key={word} className="border border-[var(--color-ink3)] rounded-lg p-6 text-center">
@@ -58,10 +98,10 @@ export default function BrandPage() {
       {/* Color Palette */}
       <div className="mb-20">
         <h2 className="text-lg font-bold text-[var(--color-ink)] mb-6">Color Palette</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {colors.map((c) => (
             <div key={c.name} className="rounded-xl overflow-hidden border border-[var(--color-ink3)]">
-              <div className="h-24 flex items-end p-4" style={{ backgroundColor: c.hex }}>
+              <div className="h-28 flex items-end p-4" style={{ backgroundColor: c.hex }}>
                 <span className="text-sm font-bold" style={{ color: c.text }}>{c.name}</span>
               </div>
               <div className="p-4 bg-white">
@@ -82,8 +122,8 @@ export default function BrandPage() {
             <p className="font-display text-5xl text-[var(--color-ink)]">murmur.</p>
             <p className="text-[13px] text-[var(--color-ink2)] mt-4">
               Instrument Serif, 400 weight<br />
-              Letter spacing: -0.03em<br />
-              All lowercase, period at end
+              Letter spacing: -0.02em<br />
+              Always lowercase, period at end
             </p>
           </div>
           <div className="border border-[var(--color-ink3)] rounded-xl p-8">
@@ -101,65 +141,22 @@ export default function BrandPage() {
       {/* Wordmark */}
       <div className="mb-20">
         <h2 className="text-lg font-bold text-[var(--color-ink)] mb-2">Wordmark</h2>
-        <p className="text-[13px] text-[var(--color-ink2)] mb-6">Always lowercase. Always with a period. Never capitalize, never bold.</p>
+        <p className="text-[13px] text-[var(--color-ink2)] mb-6">
+          Always lowercase. Always with a period. Never capitalize, never bold.
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {wordmarks.map((w) => (
-            <div key={w.name} className="rounded-xl overflow-hidden border border-[var(--color-ink3)]">
-              <div className="p-8 flex items-center justify-center" style={{ backgroundColor: w.bg }}>
-                <Image src={`/brand/${w.file}.png`} alt={w.name} width={400} height={80} className="object-contain h-12" unoptimized />
-              </div>
-              <div className="p-4 bg-white flex justify-between items-center">
-                <span className="text-xs text-[var(--color-ink2)]">{w.name}</span>
-                <a href={`/brand/${w.file}.svg`} download className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent)] no-underline hover:opacity-70">
-                  SVG
-                </a>
-              </div>
+          <div className="rounded-xl overflow-hidden border border-[var(--color-ink3)]">
+            <div className="p-12 flex items-center justify-center" style={{ backgroundColor: "#f3f2ec" }}>
+              <span className="font-display text-6xl" style={{ color: "#1f3a33" }}>murmur.</span>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Logo Concepts */}
-      <div className="mb-20">
-        <h2 className="text-lg font-bold text-[var(--color-ink)] mb-2">Logo Concepts</h2>
-        <p className="text-[13px] text-[var(--color-ink2)] mb-6">Five icon mark concepts. Click SVG to download.</p>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {logos.map((l) => (
-            <div key={l.name} className="border border-[var(--color-ink3)] rounded-xl overflow-hidden">
-              <div className="p-4 flex items-center justify-center bg-[#0a0a0a]">
-                <Image src={`/brand/${l.file}.png`} alt={l.name} width={120} height={120} className="object-contain w-20 h-20" unoptimized />
-              </div>
-              <div className="p-3">
-                <p className="text-xs font-bold text-[var(--color-ink)]">{l.name}</p>
-                <p className="text-[10px] text-[var(--color-ink2)] mt-1 leading-snug">{l.desc}</p>
-                <div className="flex gap-2 mt-2">
-                  <a href={`/brand/${l.file}.svg`} download className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-accent)] no-underline hover:opacity-70">SVG</a>
-                  <a href={`/brand/${l.file}.png`} download className="text-[9px] font-bold uppercase tracking-wide text-[var(--color-ink2)] no-underline hover:opacity-70">PNG</a>
-                </div>
-              </div>
+            <div className="p-3 bg-white text-xs text-[var(--color-ink2)]">Light</div>
+          </div>
+          <div className="rounded-xl overflow-hidden border border-[var(--color-ink3)]">
+            <div className="p-12 flex items-center justify-center" style={{ backgroundColor: "#1f3a33" }}>
+              <span className="font-display text-6xl" style={{ color: "#f3f2ec" }}>murmur.</span>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Combined Marks */}
-      <div className="mb-20">
-        <h2 className="text-lg font-bold text-[var(--color-ink)] mb-6">Combined Marks</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {combined.map((c) => (
-            <div key={c.name} className="border border-[var(--color-ink3)] rounded-xl overflow-hidden">
-              <div className="p-8 flex items-center justify-center bg-[#0a0a0a]">
-                <Image src={`/brand/${c.file}.png`} alt={c.name} width={500} height={120} className="object-contain h-14" unoptimized />
-              </div>
-              <div className="p-4 bg-white flex justify-between items-center">
-                <span className="text-xs text-[var(--color-ink2)]">{c.name}</span>
-                <div className="flex gap-3">
-                  <a href={`/brand/${c.file}.svg`} download className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent)] no-underline hover:opacity-70">SVG</a>
-                  <a href={`/brand/${c.file}.png`} download className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-ink2)] no-underline hover:opacity-70">PNG</a>
-                </div>
-              </div>
-            </div>
-          ))}
+            <div className="p-3 bg-white text-xs text-[var(--color-ink2)]">Dark</div>
+          </div>
         </div>
       </div>
 
@@ -171,9 +168,10 @@ export default function BrandPage() {
             <h3 className="text-sm font-bold text-[var(--color-ink)] mb-3">Do</h3>
             <ul className="space-y-2 text-[13px] text-[var(--color-ink2)]">
               <li>→ Use the wordmark in lowercase with period: <strong className="text-[var(--color-ink)]">murmur.</strong></li>
-              <li>→ Maintain clear space around the logo (min: logo height)</li>
-              <li>→ Use on light backgrounds (bone, white) or dark backgrounds (surface, black)</li>
+              <li>→ Pair bone background with ink text, or ink background with bone text</li>
+              <li>→ Use yellow only as an accent (max 20% of composition)</li>
               <li>→ Use Instrument Serif for display, Inter for body</li>
+              <li>→ Maintain clear space around the wordmark (min: character height)</li>
             </ul>
           </div>
           <div>
@@ -182,8 +180,34 @@ export default function BrandPage() {
               <li>→ Don&apos;t capitalize: <s>Murmur</s>, <s>MURMUR</s></li>
               <li>→ Don&apos;t remove the period: <s>murmur</s></li>
               <li>→ Don&apos;t add effects (shadows, glows, gradients)</li>
-              <li>→ Don&apos;t stretch, rotate, or skew the logo</li>
+              <li>→ Don&apos;t stretch, rotate, or skew the wordmark</li>
+              <li>→ Don&apos;t use yellow as a background or primary color</li>
             </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Voice */}
+      <div className="mb-20">
+        <h2 className="text-lg font-bold text-[var(--color-ink)] mb-4">Voice</h2>
+        <div className="border border-[var(--color-ink3)] rounded-xl p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[13px]">
+            <div>
+              <p className="font-semibold text-[var(--color-ink)] mb-2">Conversational, not corporate</p>
+              <p className="text-[var(--color-ink2)]">Talk like a friend who happens to know a lot. Not like a product manager.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-[var(--color-ink)] mb-2">Confident, not boastful</p>
+              <p className="text-[var(--color-ink2)]">Say what we do. Don&apos;t oversell. The product speaks for itself.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-[var(--color-ink)] mb-2">Clear, not clever</p>
+              <p className="text-[var(--color-ink2)]">Plain language beats clever copy. If a sentence needs a second read, rewrite it.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-[var(--color-ink)] mb-2">Warm, not cold</p>
+              <p className="text-[var(--color-ink2)]">Murmur is intimate. Small. Quiet. Never shout. Never exclaim. Never use all caps.</p>
+            </div>
           </div>
         </div>
       </div>
