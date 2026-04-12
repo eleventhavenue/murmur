@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef } from "react";
 
 const colors = [
@@ -77,6 +78,36 @@ export default function BrandPage() {
         </p>
         <div className="border border-[var(--color-ink3)] rounded-xl p-12 flex items-center justify-center bg-[var(--color-bg)]">
           <BrandMark />
+        </div>
+      </div>
+
+      {/* Icon */}
+      <div className="mb-20">
+        <h2 className="text-lg font-bold text-[var(--color-ink)] mb-2">Icon</h2>
+        <p className="text-[13px] text-[var(--color-ink2)] mb-6">
+          A compressed single-letter mark for favicons, app icons, social avatars. The same bars-inside-type concept, scaled down.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          {[512, 256, 128, 64].map((size) => (
+            <div key={size} className="rounded-xl overflow-hidden border border-[var(--color-ink3)]">
+              <div className="p-8 flex items-center justify-center bg-[var(--color-bg)]">
+                <Image src={`/brand/murmur-icon-${size}.png`} alt={`Icon ${size}px`} width={size} height={size} className="object-contain" style={{ maxWidth: "100%", maxHeight: 120 }} unoptimized />
+              </div>
+              <div className="p-3 bg-white flex justify-between items-center">
+                <span className="text-[11px] text-[var(--color-ink2)]">{size}×{size}</span>
+                <a href={`/brand/murmur-icon-${size}.png`} download className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-accent)] no-underline hover:opacity-70">PNG</a>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="text-[12px] text-[var(--color-ink2)]">
+          Also available:{" "}
+          <a href="/brand/murmur-icon-1024.png" download className="text-[var(--color-ink)] underline">1024px master</a>,{" "}
+          <a href="/brand/murmur-icon-32.png" download className="text-[var(--color-ink)] underline">32px favicon</a>,{" "}
+          <a href="/brand/murmur-icon-16.png" download className="text-[var(--color-ink)] underline">16px</a>.{" "}
+          Transparent background:{" "}
+          <a href="/brand/murmur-icon-256-transparent.png" download className="text-[var(--color-ink)] underline">256px</a>,{" "}
+          <a href="/brand/murmur-icon-512-transparent.png" download className="text-[var(--color-ink)] underline">512px</a>.
         </div>
       </div>
 
