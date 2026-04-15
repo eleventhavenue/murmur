@@ -7,14 +7,17 @@ interface PopupBarProps {
 }
 
 function PopupBar({ text, onClose }: PopupBarProps) {
-  const { state, error, speed, play, pause, resume, hide, cycleSpeed } =
+  const { state, error, speed, voice, play, pause, resume, hide, cycleSpeed } =
     useTTS(text, onClose);
+
+  // Map voice ID to display name
+  const voiceName = voice.replace(/^[a-z]{2}_/, "").replace(/^\w/, (c) => c.toUpperCase());
   const [elapsed, setElapsed] = useState(0);
 
   // Auto-play when new text arrives
   useEffect(() => {
     if (text && !error) {
-      play("af_sky");
+      play();
       setElapsed(0);
     }
   }, [text]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -31,7 +34,7 @@ function PopupBar({ text, onClose }: PopupBarProps) {
     else if (state.status === "paused") resume();
     else if (state.status === "idle") {
       setElapsed(0);
-      play("af_sky");
+      play();
     }
   };
 
@@ -104,7 +107,7 @@ function PopupBar({ text, onClose }: PopupBarProps) {
           {state.status === "playing" && (
             <span className="flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#C8A87C] animate-pulse" />
-              <span className="text-[10px] text-[#C8A87C]/70 font-medium">Playing</span>
+              <span className="text-[10px] text-[#C8A87C]/70 font-medium">{voiceName}</span>
             </span>
           )}
           {state.status === "paused" && (
@@ -114,7 +117,7 @@ function PopupBar({ text, onClose }: PopupBarProps) {
             <span className="text-[10px] text-white/30 font-medium">Synthesizing...</span>
           )}
           {isDone && (
-            <span className="text-[10px] text-[#C8A87C]/50 font-medium">Done</span>
+            <span className="text-[10px] text-[#C8A87C]/50 font-medium">Done · {voiceName}</span>
           )}
           {error && (
             <span className="text-[10px] text-red-400/60 font-medium">Error</span>

@@ -25,6 +25,8 @@ pub fn run() {
             audio::audio_resume,
             audio::audio_stop,
             audio::audio_set_speed,
+            audio::audio_skip_forward,
+            audio::audio_skip_back,
             audio::audio_mark_done,
             device::get_device_profile,
         ])

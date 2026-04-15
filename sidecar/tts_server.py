@@ -219,26 +219,48 @@ class TTSServer:
             self._ensure_loaded()
 
             t0 = time.time()
+            total_chunks = 0
 
-            # Single create() call — faster than per-sentence
-            # kokoro handles sentence splitting internally
-            samples, sr = self.kokoro.create(text, voice=voice, speed=speed)
+            # For long texts (>200 chars), split into sentences and stream each one
+            # For short texts, synthesize as a single block (faster, fewer artifacts)
+            if len(text) > 200:
+                sentences = self._split_sentences(text)
+                sys.stderr.write(f"[murmur] Streaming {len(sentences)} sentences...\n")
+                sys.stderr.flush()
+
+                for sentence in sentences:
+                    if self._stop_requested:
+                        respond({"type": "stopped"})
+                        return
+
+                    samples, sr = self.kokoro.create(sentence, voice=voice, speed=speed)
+
+                    # Stream in 0.5s chunks
+                    chunk_size = sr // 2
+                    for i in range(0, len(samples), chunk_size):
+                        if self._stop_requested:
+                            respond({"type": "stopped"})
+                            return
+                        chunk = samples[i:i + chunk_size]
+                        b64 = base64.b64encode(chunk.astype(np.float32).tobytes()).decode("ascii")
+                        respond({"type": "chunk", "samples": b64, "sr": int(sr)})
+                        total_chunks += 1
+            else:
+                samples, sr = self.kokoro.create(text, voice=voice, speed=speed)
+
+                chunk_size = sr // 2
+                for i in range(0, len(samples), chunk_size):
+                    if self._stop_requested:
+                        respond({"type": "stopped"})
+                        return
+                    chunk = samples[i:i + chunk_size]
+                    b64 = base64.b64encode(chunk.astype(np.float32).tobytes()).decode("ascii")
+                    respond({"type": "chunk", "samples": b64, "sr": int(sr)})
+                    total_chunks += 1
 
             dt = time.time() - t0
-            sys.stderr.write(f"[murmur] Synthesized {len(samples)/sr:.1f}s audio in {dt:.1f}s\n")
+            sys.stderr.write(f"[murmur] Done: {total_chunks} chunks in {dt:.1f}s\n")
             sys.stderr.flush()
-
-            # Stream chunks of ~0.5 seconds for immediate playback
-            chunk_size = sr // 2
-            total_chunks = 0
-            for i in range(0, len(samples), chunk_size):
-                if self._stop_requested:
-                    respond({"type": "stopped"})
-                    return
-                chunk = samples[i:i + chunk_size]
-                b64 = base64.b64encode(chunk.astype(np.float32).tobytes()).decode("ascii")
-                respond({"type": "chunk", "samples": b64, "sr": int(sr)})
-                total_chunks += 1
 
             respond({"type": "done", "total_chunks": total_chunks})
         except Exception as e:

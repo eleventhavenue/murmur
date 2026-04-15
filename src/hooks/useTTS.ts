@@ -133,5 +133,13 @@ export function useTTS(text: string, onFinished?: () => void) {
     await setSpeed(next);
   }, [speed, setSpeed]);
 
-  return { state, error, speed, voice, play, pause, resume, stop, hide, setSpeed, cycleSpeed };
+  const skipForward = useCallback(async (seconds: number = 15) => {
+    await invoke("audio_skip_forward", { seconds });
+  }, []);
+
+  const skipBack = useCallback(async (seconds: number = 15) => {
+    await invoke("audio_skip_back", { seconds });
+  }, []);
+
+  return { state, error, speed, voice, play, pause, resume, stop, hide, setSpeed, cycleSpeed, skipForward, skipBack };
 }
