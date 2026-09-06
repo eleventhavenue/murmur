@@ -62,9 +62,12 @@ export default function AccountPage() {
       setUser(user);
 
       const [{ data: sub }, { data: key }] = await Promise.all([
+        // Selects every column rather than naming them: the live database
+        // predates supabase/migrations, so a column named here that has not
+        // been added yet would fail the whole query and show the user as Free.
         supabase
           .from("subscriptions")
-          .select("plan, status, current_period_end, cancel_at_period_end")
+          .select("*")
           .eq("user_id", user.id)
           .maybeSingle(),
         supabase

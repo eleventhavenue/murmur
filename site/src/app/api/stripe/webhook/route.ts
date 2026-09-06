@@ -40,14 +40,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid_signature" }, { status: 400 });
   }
 
-  // Idempotency: claim the event id first. A duplicate insert means we already
+  // Idempotency: claim the event id first. A unique violation means we already
   // processed this delivery, so acknowledge and do nothing.
+  //
+  // Any other failure — most likely webhook_events not existing yet, because
+  // supabase/migrations has not been applied — must NOT be treated as a
+  // duplicate. Swallowing it would silently drop a real payment. Log it and
+  // process the event anyway; at worst a Stripe retry repeats the work, which
+  // the handlers below are written to tolerate.
   const { error: claimError } = await supabase
     .from("webhook_events")
     .insert({ id: event.id, type: event.type });
 
-  if (claimError) {
+  const alreadyProcessed = claimError?.code === "23505";
+  if (alreadyProcessed) {
     return NextResponse.json({ received: true, duplicate: true });
+  }
+  if (claimError) {
+    console.error(
+      `webhook_events unavailable (${claimError.code}): ${claimError.message}. ` +
+        "Processing without an idempotency guard — apply supabase/migrations.",
+    );
   }
 
   try {
@@ -55,7 +68,9 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error(`Failed handling ${event.type} (${event.id}):`, err);
     // Release the claim so Stripe's retry gets a real second attempt.
-    await supabase.from("webhook_events").delete().eq("id", event.id);
+    if (!claimError) {
+      await supabase.from("webhook_events").delete().eq("id", event.id);
+    }
     return NextResponse.json({ error: "handler_failed" }, { status: 500 });
   }
 
