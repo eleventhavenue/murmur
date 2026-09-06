@@ -4,6 +4,13 @@
 <dict>
 	<key>ATSApplicationFontsPath</key>
 	<string>Fonts</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<!-- Local TTS servers speak plain HTTP on loopback. This permits
+		     localhost and .local only; the public internet still requires TLS. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

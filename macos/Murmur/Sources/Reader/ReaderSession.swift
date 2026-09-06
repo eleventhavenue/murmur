@@ -106,6 +106,9 @@ final class ReaderSession: ObservableObject {
         switch s.provider {
         case .system: return SystemVoiceProvider(voiceIdentifier: s.systemVoice)
         case .cloud: return MurmurCloudProvider(licenseKey: s.licenseKey, voiceID: s.cartesiaVoice)
+        case .localServer:
+            return LocalServerProvider(baseURL: s.localServerURL, model: s.localServerModel,
+                                       voice: s.localServerVoice, apiKey: s.localServerKey)
         case .cartesia: return CartesiaProvider(apiKey: s.cartesiaKey, voiceID: s.cartesiaVoice)
         case .fish: return FishProvider(apiKey: s.fishKey, referenceID: s.fishVoice)
         }
