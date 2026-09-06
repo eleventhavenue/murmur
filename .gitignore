@@ -12,6 +12,11 @@ build/
 sidecar/models/*.onnx
 sidecar/models/*.bin
 
+# macOS app
+macos/build/
+macos/.build/
+macos/Murmur.xcodeproj/xcuserdata/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  site:
+    name: Website
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+        working-directory: site
+      - run: npx tsc --noEmit
+        working-directory: site
+      - run: npm run lint
+        working-directory: site
+      # Deliberately builds with no secrets: the site must stay runnable by
+      # anyone who clones it, falling back to demo data.
+      - run: npm run build
+        working-directory: site
+
+  macos:
+    name: macOS app
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        working-directory: macos
+        run: ./build.sh
+      - name: Check the bundle is well formed
+        working-directory: macos
+        run: |
+          test -x build/Murmur.app/Contents/MacOS/Murmur
+          test -f build/Murmur.app/Contents/Resources/AppIcon.icns
+          test -f build/Murmur.app/Contents/Resources/Fonts/InstrumentSerif-Regular.ttf
+          codesign --verify --verbose=1 build/Murmur.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Murmur-macos
+          path: macos/build/Murmur.app
+          if-no-files-found: error

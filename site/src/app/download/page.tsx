@@ -1,6 +1,19 @@
 import Link from "next/link";
+import { getLatestRelease, formatSize } from "@/lib/releases";
 
-export default function DownloadPage() {
+export const metadata = {
+  title: "Download — Murmur",
+  description: "Download Murmur for Windows and macOS. Free and open source.",
+};
+
+// Re-check GitHub hourly so a new release appears without a redeploy.
+export const revalidate = 3600;
+
+export default async function DownloadPage() {
+  const release = await getLatestRelease();
+  const windows = release.windows;
+  const macos = release.macos;
+
   return (
     <section className="max-w-[900px] mx-auto px-10 pt-32 pb-20">
       <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-accent)] block mb-3 text-center">
@@ -10,7 +23,8 @@ export default function DownloadPage() {
         Get Murmur.
       </h1>
       <p className="text-base text-[var(--color-ink2)] max-w-[500px] leading-relaxed mb-12 mx-auto text-center">
-        Free, open source, runs entirely on your device. No account needed. Around 400MB download (includes the TTS engine).
+        Free, open source, runs entirely on your device. No account needed.
+        {windows ? ` The Windows build is ${formatSize(windows.size)} because it bundles the full offline TTS engine.` : ""}
       </p>
 
       {/* Platform cards */}
@@ -18,12 +32,15 @@ export default function DownloadPage() {
         <div className="border border-[var(--color-ink3)] rounded-xl p-8 flex flex-col items-center">
           <span className="text-4xl mb-4">🪟</span>
           <h3 className="text-[15px] font-bold mb-1">Windows</h3>
-          <p className="text-[12px] text-[var(--color-ink2)] mb-6">Windows 10 or later · 64-bit</p>
+          <p className="text-[12px] text-[var(--color-ink2)] mb-6">
+            Windows 10 or later · 64-bit
+            {windows ? ` · ${formatSize(windows.size)}` : ""}
+          </p>
           <Link
-            href="https://github.com/eleventhavenue/murmur/releases/latest/download/Murmur_0.2.0_x64-setup.exe"
+            href={windows?.url ?? release.url}
             className="w-full block text-center py-3 rounded-lg text-xs font-bold uppercase tracking-wide bg-[var(--color-surface)] text-[var(--color-surface-text)] no-underline hover:opacity-90 transition-opacity"
           >
-            Download .exe
+            {windows ? "Download .exe" : "View releases"}
           </Link>
           <Link
             href="https://github.com/eleventhavenue/murmur/releases/latest"
@@ -32,12 +49,30 @@ export default function DownloadPage() {
             or .msi / other versions →
           </Link>
         </div>
-        <div className="border border-[var(--color-ink3)] rounded-xl p-8 flex flex-col items-center opacity-50">
+        <div className={`border border-[var(--color-ink3)] rounded-xl p-8 flex flex-col items-center${macos ? "" : ""}`}>
           <span className="text-4xl mb-4">🍎</span>
           <h3 className="text-[15px] font-bold mb-1">macOS</h3>
-          <p className="text-[12px] text-[var(--color-ink2)] mb-6">Apple Silicon + Intel</p>
-          <span className="w-full block text-center py-3 rounded-lg text-xs font-bold uppercase tracking-wide border border-[var(--color-ink3)] text-[var(--color-ink)] cursor-default">
-            Coming Soon
+          <p className="text-[12px] text-[var(--color-ink2)] mb-6">
+            macOS 14 or later · Apple Silicon
+            {macos ? ` · ${formatSize(macos.size)}` : ""}
+          </p>
+          {macos ? (
+            <Link
+              href={macos.url}
+              className="w-full block text-center py-3 rounded-lg text-xs font-bold uppercase tracking-wide bg-[var(--color-surface)] text-[var(--color-surface-text)] no-underline hover:opacity-90 transition-opacity"
+            >
+              Download .dmg
+            </Link>
+          ) : (
+            <Link
+              href="https://github.com/eleventhavenue/murmur/tree/main/macos"
+              className="w-full block text-center py-3 rounded-lg text-xs font-bold uppercase tracking-wide border border-[var(--color-ink3)] text-[var(--color-ink)] no-underline hover:bg-[var(--color-ink)] hover:text-[var(--color-bg)] transition-all"
+            >
+              Build from source
+            </Link>
+          )}
+          <span className="text-[10px] text-[var(--color-ink2)] mt-2">
+            {macos ? "Uses Apple's on-device voices" : "Beta — no installer yet"}
           </span>
         </div>
         <div className="border border-[var(--color-ink3)] rounded-xl p-8 flex flex-col items-center opacity-50">
@@ -61,7 +96,7 @@ export default function DownloadPage() {
             <div>
               <h3 className="text-[14px] font-bold text-[var(--color-ink)] mb-1">Download the installer</h3>
               <p className="text-[13px] text-[var(--color-ink2)] leading-relaxed">
-                Click the Windows button above. The installer is around 400MB — it includes the full TTS engine, so it may take a minute to download.
+                Click the Windows button above.{windows ? ` The installer is ${formatSize(windows.size)}` : " The installer is large"} because it includes the full offline TTS engine, so it may take a minute.
               </p>
             </div>
           </li>
@@ -71,7 +106,7 @@ export default function DownloadPage() {
             <div>
               <h3 className="text-[14px] font-bold text-[var(--color-ink)] mb-1">Run the installer</h3>
               <p className="text-[13px] text-[var(--color-ink2)] leading-relaxed mb-2">
-                Double-click <code className="bg-[var(--color-ink3)] px-1.5 py-0.5 rounded text-[12px]">Murmur_0.2.0_x64-setup.exe</code>.
+                Double-click <code className="bg-[var(--color-ink3)] px-1.5 py-0.5 rounded text-[12px]">{windows?.name ?? "the installer"}</code>.
               </p>
               <div className="bg-[rgba(220,212,68,0.12)] border-l-2 border-[var(--color-accent)] p-4 rounded-r">
                 <p className="text-[12px] text-[var(--color-ink)] font-semibold mb-1">Windows Defender warning?</p>
