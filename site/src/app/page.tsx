@@ -7,7 +7,7 @@ const features = [
   { icon: "🔒", title: "100% Local", desc: "Your text never leaves your machine. Runs entirely offline with the kokoro engine. No cloud, no tracking." },
   { icon: "🎙️", title: "27 Voices", desc: "American, British, male, female. From warm and intimate to clear and professional. Pick your narrator." },
   { icon: "⚡", title: "Speed Control", desc: "0.75x to 3x playback. Cycle through speeds with one click. Read faster without losing comprehension." },
-  { icon: "🪶", title: "Tiny Footprint", desc: "12MB installer. No Electron bloat. Built with Tauri and Rust — fast startup, low memory, native performance." },
+  { icon: "🪶", title: "Native, Not Electron", desc: "Built with Tauri and Rust on Windows, Swift on macOS. Fast startup, low memory, no browser engine along for the ride." },
   { icon: "🔄", title: "Auto Updates", desc: "New versions delivered silently. One-click update when a new release drops. Always running the latest." },
 ];
 

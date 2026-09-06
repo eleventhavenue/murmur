@@ -98,7 +98,19 @@ pub fn start(app: &AppHandle) -> Result<(), String> {
     } else if let Some(script) = script_path {
         // Use Python script directly (dev mode)
         eprintln!("Sidecar: using script at {}", script.display());
-        let venv_python = std::path::PathBuf::from("C:/Users/12895/tts-studio/.venv/Scripts/python.exe");
+        // Honour an explicit interpreter, then a local venv, then PATH. This
+        // used to be one developer's absolute path, which meant nobody else
+        // could run the sidecar from source.
+        let venv_python = std::env::var("MURMUR_PYTHON")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|_| {
+                let root = exe_dir.join("../../..");
+                if cfg!(windows) {
+                    root.join(".venv/Scripts/python.exe")
+                } else {
+                    root.join(".venv/bin/python")
+                }
+            });
         let python = if venv_python.exists() {
             venv_python
         } else {
