@@ -217,7 +217,11 @@ async function applySubscription(
   const toIso = (seconds: number | null) =>
     seconds ? new Date(seconds * 1000).toISOString() : null;
 
-  await supabase
+  // Throw rather than ignore a failed write. This runs after money has
+  // changed hands, so a silent failure means a paying customer keeps their
+  // free entitlements with nothing in the logs. Throwing returns a 500, which
+  // makes Stripe retry and surfaces the problem.
+  const { error: subscriptionError } = await supabase
     .from("subscriptions")
     .update({
       stripe_customer_id: subscription.customer as string,
@@ -231,6 +235,13 @@ async function applySubscription(
     })
     .eq("user_id", userId);
 
+  if (subscriptionError) {
+    throw new Error(
+      `Could not record subscription for ${userId}: ${subscriptionError.message}. ` +
+        "If this mentions a missing column, apply supabase/migrations.",
+    );
+  }
+
   // One key per user, created at signup. Upgrade it rather than issuing another.
   const { data: existing } = await supabase
     .from("license_keys")
@@ -238,22 +249,26 @@ async function applySubscription(
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (existing) {
-    await supabase
-      .from("license_keys")
-      .update({
+  const { error: licenseError } = existing
+    ? await supabase
+        .from("license_keys")
+        .update({
+          plan: status === "canceled" ? "free" : plan,
+          is_active: true,
+          activated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id)
+    : await supabase.from("license_keys").insert({
+        user_id: userId,
+        key: generateLicenseKey(),
         plan: status === "canceled" ? "free" : plan,
         is_active: true,
         activated_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id);
-  } else {
-    await supabase.from("license_keys").insert({
-      user_id: userId,
-      key: generateLicenseKey(),
-      plan: status === "canceled" ? "free" : plan,
-      is_active: true,
-      activated_at: new Date().toISOString(),
-    });
+      });
+
+  if (licenseError) {
+    throw new Error(
+      `Could not issue a licence key for ${userId}: ${licenseError.message}`,
+    );
   }
 }
