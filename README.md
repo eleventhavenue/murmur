@@ -25,6 +25,7 @@ network. Cloud voices are an optional paid extra for people who want them.
 | Local voices | 27, via kokoro-onnx | Apple system voices |
 | Cloud voices | Planned | Murmur Cloud, Cartesia, Fish Audio |
 | Bring your own model | Planned | Any OpenAI-compatible local server |
+| Managed local engine | Bundled (383MB installer) | One-click Kokoro via Docker |
 | Built with | Tauri, Rust, React | Swift, SwiftUI, AVFoundation |
 
 The two apps are separate implementations that share a brand, a product and a
@@ -152,6 +153,8 @@ downloaded in System Settings → Accessibility → Spoken Content.
 - [x] macOS app
 - [x] Subscription billing and license keys
 - [x] Bring-your-own local TTS server (OpenAI-compatible)
+- [x] One-click local engine setup, and server auto-discovery
+- [x] Voice ranking that never picks a novelty voice
 - [ ] Signed and notarized macOS installer
 - [ ] Linux support
 - [ ] Voice cloning

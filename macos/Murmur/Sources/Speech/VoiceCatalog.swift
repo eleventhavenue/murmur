@@ -56,14 +56,38 @@ enum VoiceCatalog {
         }
     }
 
+    /// Language codes in the order we would like them, best first.
+    ///
+    /// The exact regional variant wins when a voice exists for it. Many regions
+    /// have none — there is no en-CA voice, for instance — so rather than
+    /// falling through to alphabetical order, which quietly hands a Canadian
+    /// user a British voice, fall back to the two variants that always exist.
+    private static var languagePreference: [String] {
+        var order: [String] = []
+        if let region = Locale.current.region?.identifier { order.append("en-\(region)") }
+        for fallback in ["en-US", "en-GB"] where !order.contains(fallback) {
+            order.append(fallback)
+        }
+        return order
+    }
+
+    /// Lower is better; anything unlisted sorts after everything listed.
+    private static func languageRank(_ language: String, in order: [String]) -> Int {
+        order.firstIndex(of: language) ?? order.count
+    }
+
     /// English voices worth offering, best first. Novelty voices are excluded.
     static func selectable() -> [AVSpeechSynthesisVoice] {
-        AVSpeechSynthesisVoice.speechVoices()
+        let order = languagePreference
+        return AVSpeechSynthesisVoice.speechVoices()
             .filter { $0.language.hasPrefix("en") && tier(of: $0) > .novelty }
             .sorted { a, b in
                 let (ta, tb) = (tier(of: a), tier(of: b))
                 if ta != tb { return ta > tb }
-                // Stable tie-break so the list, and the default, never shuffle.
+                let (ra, rb) = (languageRank(a.language, in: order),
+                                languageRank(b.language, in: order))
+                if ra != rb { return ra < rb }
+                // Then a stable order, so the list never shuffles between launches.
                 if a.language != b.language { return a.language < b.language }
                 return a.name < b.name
             }
