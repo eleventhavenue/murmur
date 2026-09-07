@@ -123,6 +123,13 @@ final class ReaderSession: ObservableObject {
     }
 
     private func pump(from start: Int, gen: Int) async {
+        // Wake a local engine that is installed but stopped, before the first
+        // request fails. Costs nothing for every other provider.
+        if Settings.shared.provider == .localServer {
+            await LocalEngine.shared.ensureRunning()
+            guard gen == generation else { return }
+        }
+
         var started = false
         for i in start..<chunks.count {
             guard gen == generation else { return }

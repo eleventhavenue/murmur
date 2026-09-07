@@ -4,9 +4,13 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: Settings
     @ObservedObject private var license = License.shared
+    @ObservedObject private var engine = LocalEngine.shared
     @State private var trusted = AX.isTrusted
     @State private var probing = false
     @State private var probeResult: String?
+    @State private var scanning = false
+    @State private var discovered: [LocalServerDiscovery.Server] = []
+    @State private var serverVoices: [String] = []
     @State private var copiedHook = false
     let onTest: (String) -> Void
     private let timer = Timer.publish(every: 1.5, on: .main, in: .common).autoconnect()
@@ -27,6 +31,7 @@ struct SettingsView: View {
         }
         .background(Theme.surfaceSolid)
         .onReceive(timer) { _ in trusted = AX.isTrusted }
+        .task { await engine.refresh() }
     }
 
     // MARK: Sections
@@ -98,20 +103,53 @@ struct SettingsView: View {
             case .system:
                 labelled("Voice") {
                     Picker("", selection: $settings.systemVoice) {
-                        Text("Best available").tag("")
+                        Text(bestVoiceLabel).tag("")
                         ForEach(systemVoices, id: \.identifier) { v in
-                            Text("\(v.name) · \(v.language)").tag(v.identifier)
+                            Text(VoiceCatalog.display(v)).tag(v.identifier)
                         }
                     }
                     .labelsHidden()
-                    .frame(maxWidth: 260)
+                    .frame(maxWidth: 300)
                 }
-                hint("Works offline, no key needed. Higher-quality voices can be downloaded in System Settings → Accessibility → Spoken Content.")
+                if VoiceCatalog.lacksHighQualityVoice {
+                    upgradeVoicesCallout
+                } else {
+                    hint("Works offline, no key needed.")
+                }
             case .localServer:
+                engineSetup
                 labelled("Server") { field(TextField("http://localhost:8880/v1", text: $settings.localServerURL)) }
                 labelled("Model") { field(TextField("kokoro", text: $settings.localServerModel)) }
                 labelled("Voice") { field(TextField("af_heart", text: $settings.localServerVoice)) }
+                if !discovered.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("FOUND ON THIS MACHINE")
+                            .font(Theme.label()).tracking(1.4).foregroundStyle(Theme.inkFaint)
+                        ForEach(discovered) { server in
+                            Button { apply(server) } label: {
+                                HStack(spacing: 8) {
+                                    Circle().fill(Color.green).frame(width: 6, height: 6)
+                                    Text("\(server.label) · \(server.baseURL)")
+                                        .font(Theme.ui(12)).foregroundStyle(Theme.ink)
+                                }
+                                .padding(.horizontal, 12).padding(.vertical, 7)
+                                .background(Capsule().fill(Theme.well))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                if !serverVoices.isEmpty {
+                    labelled("Voices") {
+                        Picker("", selection: $settings.localServerVoice) {
+                            ForEach(serverVoices, id: \.self) { Text($0).tag($0) }
+                        }
+                        .labelsHidden()
+                        .frame(maxWidth: 260)
+                    }
+                }
                 HStack(spacing: 10) {
+                    pill(scanning ? "Scanning…" : "Scan") { Task { await scanForServers() } }
                     pill(probing ? "Checking…" : "Test connection") { Task { await probeServer() } }
                     if let result = probeResult {
                         Text(result)
@@ -138,6 +176,120 @@ struct SettingsView: View {
             pill("Test voice") {
                 onTest("This is Murmur. Highlight anything on your screen, press the shortcut, and I'll read it to you. Try the speed chips while I talk.")
             }
+        }
+    }
+
+    /// Offers to install and run a local engine, so "local voices" is a button
+    /// rather than a README. Hidden once a server is already reachable.
+    @ViewBuilder private var engineSetup: some View {
+        switch engine.state {
+        case .checking:
+            hint("Looking for a local engine…")
+
+        case .noDocker:
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Murmur can run a voice engine for you, but it needs Docker.")
+                    .font(Theme.ui(13, .medium)).foregroundStyle(Theme.ink)
+                Text("Install Docker Desktop and reopen this window, or point Murmur at a server you're already running.")
+                    .font(Theme.ui(12)).foregroundStyle(Theme.inkFaint)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.well))
+
+        case .notInstalled:
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Set up local voices").font(Theme.ui(13, .medium)).foregroundStyle(Theme.ink)
+                Text("Downloads and runs Kokoro, 27 natural voices, entirely on this machine. A few gigabytes, once. Nothing you read ever leaves your computer.")
+                    .font(Theme.ui(12)).foregroundStyle(Theme.inkFaint)
+                    .fixedSize(horizontal: false, vertical: true)
+                pill("Download and start") { Task { await installEngine() } }
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.well))
+
+        case .pulling(let detail):
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Downloading the voice engine…")
+                        .font(Theme.ui(13, .medium)).foregroundStyle(Theme.ink)
+                }
+                Text(detail).font(Theme.ui(11)).foregroundStyle(Theme.inkFaint).lineLimit(1)
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.well))
+
+        case .starting:
+            HStack(spacing: 8) {
+                ProgressView().controlSize(.small)
+                Text("Starting the engine…").font(Theme.ui(12)).foregroundStyle(Theme.inkSoft)
+            }
+
+        case .running:
+            HStack(spacing: 8) {
+                Circle().fill(Color.green).frame(width: 7, height: 7)
+                Text("Local engine running").font(Theme.ui(12)).foregroundStyle(Theme.inkSoft)
+                Spacer()
+                Button("Stop") { Task { await engine.stop() } }
+                    .buttonStyle(.plain).font(Theme.ui(11))
+                    .foregroundStyle(Theme.inkFaint)
+            }
+
+        case .stopped:
+            HStack(spacing: 10) {
+                pill("Start local engine") { Task { await startEngine() } }
+                Text("Installed, not running").font(Theme.ui(12)).foregroundStyle(Theme.inkFaint)
+            }
+
+        case .failed(let message):
+            hint(message)
+        }
+    }
+
+    private func installEngine() async {
+        await engine.install()
+        if engine.state == .running { adoptEngine() }
+    }
+
+    private func startEngine() async {
+        await engine.start()
+        if engine.state == .running { adoptEngine() }
+    }
+
+    /// Points the provider at the engine we just started.
+    private func adoptEngine() {
+        settings.localServerURL = LocalEngine.baseURL
+        settings.localServerModel = "kokoro"
+        Task {
+            if let server = await LocalServerDiscovery.probe(LocalEngine.baseURL) {
+                serverVoices = server.voices
+                if let voice = server.voices.first, settings.localServerVoice.isEmpty {
+                    settings.localServerVoice = voice
+                }
+            }
+        }
+    }
+
+    private func apply(_ server: LocalServerDiscovery.Server) {
+        settings.localServerURL = server.baseURL
+        if let model = server.models.first { settings.localServerModel = model }
+        if let voice = server.voices.first { settings.localServerVoice = voice }
+        serverVoices = server.voices
+    }
+
+    /// Looks for a server already running, so nobody has to type a URL.
+    private func scanForServers() async {
+        scanning = true
+        probeResult = nil
+        defer { scanning = false }
+
+        discovered = await LocalServerDiscovery.scan()
+        if discovered.isEmpty {
+            probeResult = "No local server found. Start one, or type its address above."
+        } else if discovered.count == 1, let only = discovered.first {
+            apply(only)
+            probeResult = "Found \(only.label)."
         }
     }
 
@@ -198,10 +350,30 @@ struct SettingsView: View {
         }
     }
 
-    private var systemVoices: [AVSpeechSynthesisVoice] {
-        AVSpeechSynthesisVoice.speechVoices()
-            .filter { $0.language.hasPrefix("en") }
-            .sorted { ($0.quality.rawValue, $0.name) > ($1.quality.rawValue, $1.name) }
+    /// Curated and ranked: novelty voices excluded, best first.
+    private var systemVoices: [AVSpeechSynthesisVoice] { VoiceCatalog.selectable() }
+
+    private var bestVoiceLabel: String {
+        guard let best = VoiceCatalog.best() else { return "Best available" }
+        return "Best available (\(best.name))"
+    }
+
+    /// A stock Mac ships only compact voices, which is why Murmur sounds
+    /// robotic out of the box. The better ones are free; people never find them.
+    private var upgradeVoicesCallout: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Your Mac only has basic voices installed.")
+                .font(Theme.ui(13, .medium))
+                .foregroundStyle(Theme.ink)
+            Text("Apple's Enhanced and Premium voices are a free download and sound dramatically better. Pick an English voice, then choose Premium.")
+                .font(Theme.ui(12))
+                .foregroundStyle(Theme.inkFaint)
+                .fixedSize(horizontal: false, vertical: true)
+            pill("Open voice downloads") { VoiceCatalog.openVoiceDownloads() }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.well))
     }
 
     private var shortcut: some View {
