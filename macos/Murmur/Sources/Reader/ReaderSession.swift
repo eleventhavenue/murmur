@@ -58,6 +58,18 @@ final class ReaderSession: ObservableObject {
         startTicker()
     }
 
+    /// Shows a message in the player without starting a reading. Used when the
+    /// hotkey cannot do anything useful and the reason is worth saying out loud.
+    func present(error message: String) {
+        teardown()
+        chunks = []
+        currentIndex = 0
+        progress = 0
+        originalText = ""
+        sourceApp = ""
+        phase = .failed(message)
+    }
+
     func togglePlayPause() {
         switch phase {
         case .playing: audio.pause(); phase = .paused
@@ -123,6 +135,13 @@ final class ReaderSession: ObservableObject {
     }
 
     private func pump(from start: Int, gen: Int) async {
+        // Wake a local engine that is installed but stopped, before the first
+        // request fails. Costs nothing for every other provider.
+        if Settings.shared.provider == .localServer {
+            await LocalEngine.shared.ensureRunning()
+            guard gen == generation else { return }
+        }
+
         var started = false
         for i in start..<chunks.count {
             guard gen == generation else { return }

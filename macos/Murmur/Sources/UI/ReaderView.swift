@@ -71,7 +71,27 @@ struct ReaderView: View {
 
     private var counter: String {
         guard !session.chunks.isEmpty else { return "" }
-        return "\(min(session.currentIndex + 1, session.chunks.count)) / \(session.chunks.count)"
+        let position = "\(min(session.currentIndex + 1, session.chunks.count)) / \(session.chunks.count)"
+        guard let remaining = remainingTime else { return position }
+        return "\(position) · \(remaining)"
+    }
+
+    /// Roughly how much is left to hear.
+    ///
+    /// Pressing a hotkey could previously commit you to seven minutes of audio
+    /// with nothing on screen suggesting the length. Speech runs at about 150
+    /// words a minute, and a word averages around 5.5 characters, both scaled
+    /// by the playback rate.
+    private var remainingTime: String? {
+        let chunks = session.chunks
+        guard session.currentIndex < chunks.count else { return nil }
+        let charsLeft = chunks[session.currentIndex...].reduce(0) { $0 + $1.text.count }
+        let words = Double(charsLeft) / 5.5
+        let seconds = words / 150.0 * 60.0 / max(session.speed, 0.1)
+        guard seconds >= 1 else { return nil }
+        if seconds < 60 { return "\(Int(seconds.rounded()))s" }
+        let minutes = Int((seconds / 60).rounded())
+        return minutes < 60 ? "\(minutes) min" : String(format: "%.1f hr", seconds / 3600)
     }
 
     // MARK: Teleprompter

@@ -26,9 +26,11 @@ struct SystemVoiceProvider: SpeechProvider {
         withExtendedLifetime(synthesizer) {}
     }
 
+    /// Delegates to VoiceCatalog, which ranks by voice lineage rather than the
+    /// system quality flag. Sorting on quality alone leaves every voice tied on
+    /// a stock Mac, which made this pick arbitrary and occasionally a novelty
+    /// voice.
     static func bestDefaultVoice() -> AVSpeechSynthesisVoice? {
-        let voices = AVSpeechSynthesisVoice.speechVoices().filter { $0.language.hasPrefix("en") }
-        let ranked = voices.sorted { a, b in a.quality.rawValue > b.quality.rawValue }
-        return ranked.first ?? AVSpeechSynthesisVoice(language: "en-US")
+        VoiceCatalog.best()
     }
 }

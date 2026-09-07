@@ -12,7 +12,23 @@ Compiles with `swiftc`, assembles `build/Murmur.app`, signs it and launches. Nee
 
 `Murmur.xcodeproj` is still there if you install Xcode and prefer to work in it; regenerate it with `xcodegen generate` after changing `project.yml`.
 
-Without an Apple Development signing identity the app is ad-hoc signed, and macOS drops the Accessibility grant on every rebuild. Adding a free Apple ID signing certificate in Xcode fixes that permanently.
+### Signing, and why the Accessibility permission keeps resetting
+
+macOS ties the Accessibility grant to the app's code signature. An ad-hoc build gets a new signature every time it is rebuilt, so the grant silently stops applying — and System Settings still shows the toggle as enabled, which makes it look like a bug in Murmur rather than a stale permission.
+
+Any stable certificate fixes it, and you need neither Xcode nor an Apple ID:
+
+1. Open **Keychain Access** → menu **Certificate Assistant** → **Create a Certificate…**
+2. Name it `Murmur Dev`, Identity Type **Self Signed Root**, Certificate Type **Code Signing**
+3. Create it, then run `./build.sh` again
+
+`build.sh` finds it automatically and the permission then survives rebuilds. It prefers an Apple Development certificate when you have one, and `MURMUR_SIGN_IDENTITY` overrides both.
+
+If the permission is already stuck, clear the stale entry and grant it fresh:
+
+```bash
+tccutil reset Accessibility ai.murmur.app
+```
 
 First launch opens the setup window and asks for **Accessibility** access. That's what lets Murmur see what you've highlighted.
 
@@ -35,18 +51,20 @@ First launch opens the setup window and asks for **Accessibility** access. That'
 | Cartesia | Sonic-3, streamed | API key from play.cartesia.ai |
 | Fish Audio | S1 | API key from fish.audio |
 
-**Local Server** points Murmur at anything speaking OpenAI's
-`/v1/audio/speech` API, so you can run whichever model you like on your own
-machine and keep everything offline. Known to work with
-[Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI), LM Studio, LocalAI
-and Speaches. The quickest way to try it:
+**Local Server** runs a real neural engine on your own machine. Choose it and
+press **Download and start**: Murmur pulls Kokoro via Docker, runs it, and points
+itself at it. After that the engine wakes on demand, so a reboot costs you
+nothing. Nothing you read ever leaves your computer.
 
-```bash
-docker run -p 8880:8880 ghcr.io/remsky/kokoro-fastapi-cpu
-```
+Murmur orchestrates rather than bundles. The image comes from upstream through
+your own Docker, so no model weights ship with the app and none of their licences
+come with it either — Kokoro's grapheme-to-phoneme stack depends on espeak-ng and
+phonemizer, both GPL-3.0.
 
-Then set the provider to Local Server, leave the address at
-`http://localhost:8880/v1`, and press Test connection. Murmur asks for `pcm` so
+Already running something? Press **Scan** and Murmur finds it. Anything speaking
+OpenAI's `/v1/audio/speech` works: Kokoro-FastAPI, LM Studio, LocalAI, Speaches.
+It probes the usual ports, reads the server's model and voice lists, and fills
+the fields in for you. Murmur asks for `pcm` so
 playback starts on the first bytes, and reads a WAV header instead if the server
 sends one. Most servers need no key; the field is there for proxies that do.
 
@@ -83,6 +101,22 @@ To point the app at a local website while developing the cloud tier:
 ```bash
 defaults write ai.murmur.app apiBase http://localhost:3000
 ```
+
+## Voices on macOS
+
+A stock Mac ships only "compact" voices, which is why system speech sounds
+robotic. Apple's Enhanced and Premium voices are a free download and are far
+better; almost nobody knows they exist. Murmur detects when none are installed
+and offers a button straight to the download pane.
+
+Voice selection is ranked by lineage rather than the system quality flag, because
+that flag reports `.default` for all 41 English voices on a stock Mac. Sorting on
+it leaves everything tied, which made the "best available" choice arbitrary and
+occasionally a novelty voice — Murmur could legitimately have picked Bubbles or
+Zarvox. Ranking on the identifier prefix instead
+(`com.apple.voice.premium` > `enhanced` > `compact` > `com.apple.eloquence` >
+`com.apple.speech.synthesis.voice`) makes it deterministic, and ties break toward
+your own regional variant.
 
 ## Design
 

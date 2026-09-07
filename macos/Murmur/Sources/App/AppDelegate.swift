@@ -39,6 +39,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func hotKeyPressed() {
         if lens.isActive { lens.cancel(); return }
+
+        // Without Accessibility there is no way to see a selection. Murmur used
+        // to quietly read the clipboard instead, which meant pressing the
+        // hotkey on highlighted text played something copied hours earlier and
+        // gave no clue why. Say what is wrong instead.
+        guard AX.isTrusted else {
+            session.present(error: "Murmur needs Accessibility access to see what you've highlighted.")
+            panel.present()
+            AX.requestTrust()
+            return
+        }
+
         Task { @MainActor in
             let selection = await SelectionCapture.capture()
             if let selection {
@@ -49,11 +61,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             } else if session.isActive {
                 session.togglePlayPause()
-            } else if settings.lensFallback && AX.isTrusted {
+            } else if settings.lensFallback {
                 panel.orderOut(nil)
                 lens.begin()
-            } else if let clip = SelectionCapture.clipboardText() {
-                read(clip, from: "Clipboard")
+            } else {
+                // Deliberately does not fall back to the clipboard. The hotkey
+                // means "read what I selected"; reading something else is worse
+                // than doing nothing. "Read Clipboard" in the menu is explicit.
+                session.present(error: "Nothing selected.")
+                panel.present()
             }
         }
     }
