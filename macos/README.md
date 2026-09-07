@@ -12,7 +12,23 @@ Compiles with `swiftc`, assembles `build/Murmur.app`, signs it and launches. Nee
 
 `Murmur.xcodeproj` is still there if you install Xcode and prefer to work in it; regenerate it with `xcodegen generate` after changing `project.yml`.
 
-Without an Apple Development signing identity the app is ad-hoc signed, and macOS drops the Accessibility grant on every rebuild. Adding a free Apple ID signing certificate in Xcode fixes that permanently.
+### Signing, and why the Accessibility permission keeps resetting
+
+macOS ties the Accessibility grant to the app's code signature. An ad-hoc build gets a new signature every time it is rebuilt, so the grant silently stops applying — and System Settings still shows the toggle as enabled, which makes it look like a bug in Murmur rather than a stale permission.
+
+Any stable certificate fixes it, and you need neither Xcode nor an Apple ID:
+
+1. Open **Keychain Access** → menu **Certificate Assistant** → **Create a Certificate…**
+2. Name it `Murmur Dev`, Identity Type **Self Signed Root**, Certificate Type **Code Signing**
+3. Create it, then run `./build.sh` again
+
+`build.sh` finds it automatically and the permission then survives rebuilds. It prefers an Apple Development certificate when you have one, and `MURMUR_SIGN_IDENTITY` overrides both.
+
+If the permission is already stuck, clear the stale entry and grant it fresh:
+
+```bash
+tccutil reset Accessibility ai.murmur.app
+```
 
 First launch opens the setup window and asks for **Accessibility** access. That's what lets Murmur see what you've highlighted.
 
