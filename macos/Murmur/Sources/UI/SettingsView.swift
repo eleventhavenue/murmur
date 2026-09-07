@@ -432,9 +432,12 @@ struct SettingsView: View {
 
     static var hookSnippet: String {
         let bin = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/Murmur").path
+        // The path is quoted so spaces survive, and those quotes have to reach
+        // the file as \" or the JSON is malformed. Escaping them only at the
+        // Swift level produced a snippet that broke settings.json when pasted.
         return """
         "hooks": {
-          "Stop": [{ "hooks": [{ "type": "command", "command": "\"\(bin)\" --hook" }] }]
+          "Stop": [{ "hooks": [{ "type": "command", "command": "\\"\(bin)\\" --hook" }] }]
         }
         """
     }
