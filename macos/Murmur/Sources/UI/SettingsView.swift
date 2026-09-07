@@ -5,6 +5,8 @@ struct SettingsView: View {
     @ObservedObject var settings: Settings
     @ObservedObject private var license = License.shared
     @State private var trusted = AX.isTrusted
+    @State private var probing = false
+    @State private var probeResult: String?
     @State private var copiedHook = false
     let onTest: (String) -> Void
     private let timer = Timer.publish(every: 1.5, on: .main, in: .common).autoconnect()
@@ -105,6 +107,21 @@ struct SettingsView: View {
                     .frame(maxWidth: 260)
                 }
                 hint("Works offline, no key needed. Higher-quality voices can be downloaded in System Settings → Accessibility → Spoken Content.")
+            case .localServer:
+                labelled("Server") { field(TextField("http://localhost:8880/v1", text: $settings.localServerURL)) }
+                labelled("Model") { field(TextField("kokoro", text: $settings.localServerModel)) }
+                labelled("Voice") { field(TextField("af_heart", text: $settings.localServerVoice)) }
+                HStack(spacing: 10) {
+                    pill(probing ? "Checking…" : "Test connection") { Task { await probeServer() } }
+                    if let result = probeResult {
+                        Text(result)
+                            .font(Theme.ui(12))
+                            .foregroundStyle(Theme.inkSoft)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                hint("Any server that speaks OpenAI's /v1/audio/speech works: Kokoro-FastAPI, LM Studio, LocalAI, Speaches. Your text never leaves your machine. Leave the key blank unless your server asks for one.")
+                labelled("Key") { field(SecureField("optional", text: $settings.localServerKey)) }
             case .cloud:
                 licenceRow
                 hint("Premium voices with no API key of your own. Requires a Murmur Pro subscription — your key is on murmurrrr.com/account.")
@@ -121,6 +138,31 @@ struct SettingsView: View {
             pill("Test voice") {
                 onTest("This is Murmur. Highlight anything on your screen, press the shortcut, and I'll read it to you. Try the speed chips while I talk.")
             }
+        }
+    }
+
+    /// Asks the server for a word of audio and reports what came back. Far more
+    /// useful than a bare reachability check: it catches a wrong model name or
+    /// an unknown voice, which is what actually goes wrong.
+    private func probeServer() async {
+        probing = true
+        probeResult = nil
+        defer { probing = false }
+
+        let provider = LocalServerProvider(baseURL: settings.localServerURL,
+                                           model: settings.localServerModel,
+                                           voice: settings.localServerVoice,
+                                           apiKey: settings.localServerKey)
+        var frames = 0
+        do {
+            try await provider.synthesize("Hello.") { buffer in
+                frames += Int(buffer.frameLength)
+            }
+            probeResult = frames > 0
+                ? "Connected — received \(String(format: "%.1f", Double(frames) / 24_000))s of audio."
+                : "Connected, but the server sent no audio. Check the voice name."
+        } catch {
+            probeResult = (error as? SpeechError)?.message ?? error.localizedDescription
         }
     }
 

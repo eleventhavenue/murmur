@@ -24,6 +24,7 @@ network. Cloud voices are an optional paid extra for people who want them.
 | Hotkey | `Ctrl+Alt+M` | `⌘⇧M` |
 | Local voices | 27, via kokoro-onnx | Apple system voices |
 | Cloud voices | Planned | Murmur Cloud, Cartesia, Fish Audio |
+| Bring your own model | Planned | Any OpenAI-compatible local server |
 | Built with | Tauri, Rust, React | Swift, SwiftUI, AVFoundation |
 
 The two apps are separate implementations that share a brand, a product and a
@@ -150,6 +151,7 @@ downloaded in System Settings → Accessibility → Spoken Content.
 - [x] Sidecar bundling (PyInstaller) for zero-dependency install
 - [x] macOS app
 - [x] Subscription billing and license keys
+- [x] Bring-your-own local TTS server (OpenAI-compatible)
 - [ ] Signed and notarized macOS installer
 - [ ] Linux support
 - [ ] Voice cloning

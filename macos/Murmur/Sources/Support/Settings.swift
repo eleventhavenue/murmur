@@ -3,11 +3,12 @@ import Combine
 import ServiceManagement
 
 enum Provider: String, CaseIterable, Identifiable {
-    case system, cloud, cartesia, fish
+    case system, localServer, cloud, cartesia, fish
     var id: String { rawValue }
     var label: String {
         switch self {
         case .system: return "System"
+        case .localServer: return "Local Server"
         case .cloud: return "Murmur Cloud"
         case .cartesia: return "Cartesia"
         case .fish: return "Fish Audio"
@@ -34,6 +35,12 @@ final class Settings: ObservableObject {
     @Published var cartesiaVoice: String { didSet { d.set(cartesiaVoice, forKey: "cartesiaVoice") } }
     @Published var fishVoice: String { didSet { d.set(fishVoice, forKey: "fishVoice") } }
     @Published var systemVoice: String { didSet { d.set(systemVoice, forKey: "systemVoice") } }
+
+    /// Any server speaking OpenAI's /v1/audio/speech, running on this machine
+    /// or the local network. Nothing here leaves the user's own hardware.
+    @Published var localServerURL: String { didSet { d.set(localServerURL, forKey: "localServerURL") } }
+    @Published var localServerModel: String { didSet { d.set(localServerModel, forKey: "localServerModel") } }
+    @Published var localServerVoice: String { didSet { d.set(localServerVoice, forKey: "localServerVoice") } }
     @Published var speed: Double { didSet { d.set(speed, forKey: "speed") } }
     @Published var cleanMarkdown: Bool { didSet { d.set(cleanMarkdown, forKey: "cleanMarkdown") } }
     @Published var joinWrappedLines: Bool { didSet { d.set(joinWrappedLines, forKey: "joinWrappedLines") } }
@@ -43,6 +50,8 @@ final class Settings: ObservableObject {
 
     @Published var cartesiaKey: String { didSet { Keychain.set(cartesiaKey, for: "cartesia") } }
     @Published var fishKey: String { didSet { Keychain.set(fishKey, for: "fish") } }
+    /// Most local servers need no key; some proxies do.
+    @Published var localServerKey: String { didSet { Keychain.set(localServerKey, for: "localServer") } }
 
     /// Murmur Pro licence. The key itself lives in the Keychain; the
     /// entitlements it last resolved to are cached so the app knows what it can
@@ -66,6 +75,9 @@ final class Settings: ObservableObject {
         cartesiaVoice = d.string(forKey: "cartesiaVoice") ?? "694f9389-aac1-45b6-b726-9d9369183238"
         fishVoice = d.string(forKey: "fishVoice") ?? ""
         systemVoice = d.string(forKey: "systemVoice") ?? ""
+        localServerURL = d.string(forKey: "localServerURL") ?? "http://localhost:8880/v1"
+        localServerModel = d.string(forKey: "localServerModel") ?? "kokoro"
+        localServerVoice = d.string(forKey: "localServerVoice") ?? "af_heart"
         speed = d.object(forKey: "speed") as? Double ?? 1.0
         cleanMarkdown = d.object(forKey: "cleanMarkdown") as? Bool ?? true
         joinWrappedLines = d.object(forKey: "joinWrappedLines") as? Bool ?? true
@@ -78,6 +90,7 @@ final class Settings: ObservableObject {
         }
         cartesiaKey = Keychain.get("cartesia") ?? ""
         fishKey = Keychain.get("fish") ?? ""
+        localServerKey = Keychain.get("localServer") ?? ""
         licenseKey = Keychain.get("license") ?? ""
         licensePlan = d.string(forKey: "licensePlan") ?? "free"
         licenseCloudVoices = d.bool(forKey: "licenseCloudVoices")
@@ -86,6 +99,8 @@ final class Settings: ObservableObject {
     var activeKeyMissing: Bool {
         switch provider {
         case .system: return false
+        // A local server needs an address, not a credential.
+        case .localServer: return localServerURL.isEmpty
         case .cloud: return licenseKey.isEmpty
         case .cartesia: return cartesiaKey.isEmpty
         case .fish: return fishKey.isEmpty

@@ -30,9 +30,25 @@ First launch opens the setup window and asks for **Accessibility** access. That'
 | Provider | Model | Needs |
 | --- | --- | --- |
 | System | Apple voices, on-device | nothing |
+| Local Server | anything you host | a URL |
 | Murmur Cloud | Sonic-3, streamed | a Murmur Pro licence key |
 | Cartesia | Sonic-3, streamed | API key from play.cartesia.ai |
 | Fish Audio | S1 | API key from fish.audio |
+
+**Local Server** points Murmur at anything speaking OpenAI's
+`/v1/audio/speech` API, so you can run whichever model you like on your own
+machine and keep everything offline. Known to work with
+[Kokoro-FastAPI](https://github.com/remsky/Kokoro-FastAPI), LM Studio, LocalAI
+and Speaches. The quickest way to try it:
+
+```bash
+docker run -p 8880:8880 ghcr.io/remsky/kokoro-fastapi-cpu
+```
+
+Then set the provider to Local Server, leave the address at
+`http://localhost:8880/v1`, and press Test connection. Murmur asks for `pcm` so
+playback starts on the first bytes, and reads a WAV header instead if the server
+sends one. Most servers need no key; the field is there for proxies that do.
 
 **Murmur Cloud** is the paid tier: premium voices without signing up for a TTS
 provider yourself. Paste the licence key from
@@ -85,7 +101,7 @@ Murmur/Sources
   Hotkey/     Carbon global hotkey
   Capture/    Accessibility helpers, selection capture, Lens overlay
   Text/       TextCleaner, Chunker (sentence-sized chunks via NLTokenizer)
-  Speech/     SpeechProvider protocol, Murmur Cloud, Cartesia, Fish, System voice, streaming HTTP
+  Speech/     SpeechProvider protocol, Local Server, Murmur Cloud, Cartesia, Fish, System voice, streaming HTTP
   Audio/      AVAudioEngine pipeline with time-pitch and level tap
   Reader/     ReaderSession orchestration, per-chunk audio cache
   UI/         Theme, Waveform, ReaderView/Panel, Settings, hotkey recorder
