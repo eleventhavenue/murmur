@@ -42,18 +42,30 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 #   Keychain Access > Certificate Assistant > Create a Certificate…
 #   Name: Murmur Dev   Identity Type: Self Signed Root
 #   Certificate Type: Code Signing
+# Matched case-insensitively, and NOT restricted to "valid" identities: a
+# self-signed certificate reports CSSMERR_TP_NOT_TRUSTED and is filtered out by
+# `find-identity -v`, even though codesign signs with it perfectly well. Trust
+# governs verification against a public authority, which is irrelevant here.
+# Signing by SHA-1 rather than name avoids ambiguity when names collide.
+find_identity() {
+  security find-identity -p codesigning 2>/dev/null \
+    | awk -v pat="$1" 'tolower($0) ~ tolower(pat) && $2 ~ /^[0-9A-F]{40}$/ { print $2; exit }'
+}
+
 IDENTITY="${MURMUR_SIGN_IDENTITY:-}"
-if [ -z "$IDENTITY" ]; then
-  IDENTITY=$(security find-identity -v -p codesigning | grep -o '"Apple Development[^"]*"' | head -1 | tr -d '"' || true)
-fi
-if [ -z "$IDENTITY" ]; then
-  IDENTITY=$(security find-identity -v -p codesigning | grep -o '"Murmur Dev[^"]*"' | head -1 | tr -d '"' || true)
+[ -n "$IDENTITY" ] || IDENTITY=$(find_identity "Apple Development")
+[ -n "$IDENTITY" ] || IDENTITY=$(find_identity "Murmur Dev")
+
+IDENTITY_NAME=""
+if [ -n "$IDENTITY" ]; then
+  IDENTITY_NAME=$(security find-identity -p codesigning 2>/dev/null \
+    | awk -v h="$IDENTITY" '$2 == h { sub(/^[^"]*"/, ""); sub(/".*$/, ""); print; exit }')
 fi
 
 codesign --force --sign "${IDENTITY:--}" "$APP"
 
 if [ -n "$IDENTITY" ]; then
-  echo "signed with: $IDENTITY (Accessibility grant survives rebuilds)"
+  echo "signed with: ${IDENTITY_NAME:-$IDENTITY} — the Accessibility grant now survives rebuilds"
 else
   cat <<'NOTE'
 note: ad-hoc signed. macOS will drop Murmur's Accessibility permission on every

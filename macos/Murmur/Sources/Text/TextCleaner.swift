@@ -44,6 +44,7 @@ struct TextCleaner {
                  .replacingOccurrences(of: "&gt;", with: ">").replacingOccurrences(of: "&nbsp;", with: " ")
         }
 
+        s = speakAcronyms(s)
         // URLs → just the host, so "https://github.com/foo/bar" reads as "github.com".
         s = regexReplace(s, "https?://([A-Za-z0-9.-]+)[^\\s)\\]>\"']*", "$1")
         // Re-flow first (list markers tell us where blocks start), then drop the markers.
@@ -53,6 +54,41 @@ struct TextCleaner {
         s = regexReplace(s, "\\n{3,}", "\n\n")
         s = regexReplace(s, "(?m)^[ ]+|[ ]+$", "")
         return s.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Written forms that speech synthesisers spell out letter by letter when
+    /// they should be said as words.
+    ///
+    /// Every voice tested reads an all-caps token as individual letters, which
+    /// is right for API and URL and wrong for README — "R E A D M E". Only
+    /// terms that are genuinely pronounced as words belong here; anything
+    /// people really do spell aloud is deliberately absent.
+    static let spokenForms: [String: String] = [
+        "README": "Read Me",
+        "TODO": "To-do",
+        "FIXME": "Fix Me",
+        "JSON": "Jason",
+        "YAML": "Yammel",
+        "SQL": "Sequel",
+        "REGEX": "Reg-ex",
+        "ASCII": "Askey",
+        "WYSIWYG": "Wizzywig",
+        "SaaS": "Sass",
+        "CRUD": "Crud",
+        "NaN": "Nan",
+    ]
+
+    /// Applies the table above, matching whole words only so README changes but
+    /// READMEs-inside-a-longer-token does not.
+    private func speakAcronyms(_ text: String) -> String {
+        var out = text
+        for (written, spoken) in Self.spokenForms {
+            // Optional trailing "s" so READMEs becomes "Read Mes" rather than
+            // falling back to being spelled out.
+            let pattern = "\\b" + NSRegularExpression.escapedPattern(for: written) + "(s?)\\b"
+            out = regexReplace(out, pattern, spoken + "$1")
+        }
+        return out
     }
 
     /// Bullets, numbered items, checkboxes and CLI prompt glyphs.
