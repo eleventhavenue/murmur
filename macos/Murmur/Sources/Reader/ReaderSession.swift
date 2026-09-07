@@ -58,6 +58,18 @@ final class ReaderSession: ObservableObject {
         startTicker()
     }
 
+    /// Shows a message in the player without starting a reading. Used when the
+    /// hotkey cannot do anything useful and the reason is worth saying out loud.
+    func present(error message: String) {
+        teardown()
+        chunks = []
+        currentIndex = 0
+        progress = 0
+        originalText = ""
+        sourceApp = ""
+        phase = .failed(message)
+    }
+
     func togglePlayPause() {
         switch phase {
         case .playing: audio.pause(); phase = .paused
