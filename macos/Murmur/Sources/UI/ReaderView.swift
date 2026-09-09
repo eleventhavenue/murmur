@@ -37,12 +37,10 @@ struct ReaderView: View {
 
     private var header: some View {
         HStack(spacing: 10) {
-            Wordmark()
-            Circle()
-                .fill(statusColor)
-                .frame(width: 6, height: 6)
-                .opacity(session.phase == .preparing ? 0.4 : 1)
-                .animation(session.phase == .preparing ? .easeInOut(duration: 0.7).repeatForever() : .default, value: session.phase)
+            // The period is the status light now, so the separate dot is gone.
+            Wordmark(bounce: bounce,
+                     accent: periodColor,
+                     pulsing: session.phase == .preparing)
             if !session.sourceApp.isEmpty {
                 Text(session.sourceApp.uppercased())
                     .font(Theme.ui(10, .medium))
@@ -61,12 +59,22 @@ struct ReaderView: View {
         .padding(.top, 16)
     }
 
-    private var statusColor: Color {
-        switch session.phase {
-        case .playing, .preparing: return Theme.accent
-        case .failed: return .red
-        default: return Theme.inkFaint
-        }
+    /// Peak of the current output level, so the period tracks speech rather
+    /// than a timer. Slightly over-driven, because conversational speech rarely
+    /// approaches full scale and a literal mapping barely moves.
+    private var bounce: Double {
+        guard session.phase == .playing else { return 0 }
+        let peak = session.levels.max() ?? 0
+        return min(1, Double(peak) * 1.6)
+    }
+
+    /// The period keeps the wordmark's own colour while things are going well.
+    /// Movement already signals that Murmur is speaking, and tinting it the
+    /// yellow accent would put low-contrast type on a bone background for no
+    /// added meaning. Failure is the one state worth colouring.
+    private var periodColor: Color? {
+        if case .failed = session.phase { return .red }
+        return nil
     }
 
     private var counter: String {
