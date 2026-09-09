@@ -102,14 +102,18 @@ struct SettingsView: View {
             switch settings.provider {
             case .system:
                 labelled("Voice") {
-                    Picker("", selection: $settings.systemVoice) {
-                        Text(bestVoiceLabel).tag("")
-                        ForEach(systemVoices, id: \.identifier) { v in
-                            Text(VoiceCatalog.display(v)).tag(v.identifier)
+                    HStack(spacing: 8) {
+                        Picker("", selection: $settings.systemVoice) {
+                            Text(bestVoiceLabel).tag("")
+                            ForEach(systemVoices, id: \.identifier) { v in
+                                Text(VoiceCatalog.display(v)).tag(v.identifier)
+                            }
                         }
+                        .labelsHidden()
+                        .frame(maxWidth: 300)
+                        .onChange(of: settings.systemVoice) { _, _ in preview() }
+                        previewButton
                     }
-                    .labelsHidden()
-                    .frame(maxWidth: 300)
                 }
                 if VoiceCatalog.lacksHighQualityVoice {
                     upgradeVoicesCallout
@@ -141,12 +145,17 @@ struct SettingsView: View {
                 }
                 if !serverVoices.isEmpty {
                     labelled("Voices") {
-                        Picker("", selection: $settings.localServerVoice) {
-                            ForEach(serverVoices, id: \.self) { Text($0).tag($0) }
+                        HStack(spacing: 8) {
+                            Picker("", selection: $settings.localServerVoice) {
+                                ForEach(serverVoices, id: \.self) { Text($0).tag($0) }
+                            }
+                            .labelsHidden()
+                            .frame(maxWidth: 260)
+                            .onChange(of: settings.localServerVoice) { _, _ in preview() }
+                            previewButton
                         }
-                        .labelsHidden()
-                        .frame(maxWidth: 260)
                     }
+                    hint("Changing the voice plays a sample. \(serverVoices.count) available on this server.")
                 }
                 HStack(spacing: 10) {
                     pill(scanning ? "Scanning…" : "Scan") { Task { await scanForServers() } }
@@ -175,6 +184,9 @@ struct SettingsView: View {
 
             pill("Test voice") {
                 onTest("This is Murmur. Highlight anything on your screen, press the shortcut, and I'll read it to you. Try the speed chips while I talk.")
+            }
+            if settings.provider == .cartesia || settings.provider == .fish || settings.provider == .cloud {
+                hint("Previews aren't automatic here, since each one is a billable request.")
             }
         }
     }
@@ -270,6 +282,29 @@ struct SettingsView: View {
             }
         }
     }
+
+    /// A short line, chosen to carry some intonation rather than just prove
+    /// audio works. Auditioning 68 voices means hearing this a lot, so it stays
+    /// brief.
+    static let sampleLine = "Hello. This is how I'll sound when I read to you."
+
+    /// Speaks the sample in whatever voice is currently selected.
+    ///
+    /// Auto-fires when the picker changes for System and Local Server, matching
+    /// how System Settings auditions voices. Deliberately not automatic for
+    /// Cartesia, Fish or Murmur Cloud: every preview there is a billable
+    /// request, and scrolling a list should not cost money.
+    private var previewButton: some View {
+        Button { preview() } label: {
+            Image(systemName: "play.circle")
+                .font(.system(size: 17))
+                .foregroundStyle(Theme.inkSoft)
+        }
+        .buttonStyle(.plain)
+        .help("Hear this voice")
+    }
+
+    private func preview() { onTest(Self.sampleLine) }
 
     private func apply(_ server: LocalServerDiscovery.Server) {
         settings.localServerURL = server.baseURL

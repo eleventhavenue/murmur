@@ -68,6 +68,11 @@ the fields in for you. Murmur asks for `pcm` so
 playback starts on the first bytes, and reads a WAV header instead if the server
 sends one. Most servers need no key; the field is there for proxies that do.
 
+Changing the voice plays a short sample, the way System Settings auditions
+system voices. That applies to System and Local Server. It is deliberately not
+automatic for Cartesia, Fish or Murmur Cloud, where every preview is a billable
+request; those have a play button instead.
+
 **Murmur Cloud** is the paid tier: premium voices without signing up for a TTS
 provider yourself. Paste the licence key from
 [murmurrrr.com/account](https://murmurrrr.com/account) into Settings and press
