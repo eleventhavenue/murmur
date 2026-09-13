@@ -13,6 +13,7 @@ final class ChunkLoader {
     private(set) var error: Error?
     private var continuations: [AsyncThrowingStream<AVAudioPCMBuffer, Error>.Continuation] = []
     private var task: Task<Void, Never>?
+    private let collector = MarkCollector()
 
     var totalFrames: AVAudioFramePosition { buffers.reduce(0) { $0 + AVAudioFramePosition($1.frameLength) } }
 
@@ -33,10 +34,11 @@ final class ChunkLoader {
         self.text = text
         task = Task { [weak self] in
             do {
+                let collector = await MainActor.run { self?.collector }
                 try await provider.synthesize(text) { buffer in
                     await MainActor.run { self?.append(buffer) }
                 } onMark: { mark in
-                    Task { @MainActor in self?.marks.append(mark) }
+                    collector?.add(mark)   // synchronous, thread-safe
                 }
                 await MainActor.run { self?.finish(error: nil) }
             } catch {
@@ -67,17 +69,30 @@ final class ChunkLoader {
     private func finish(error: Error?) {
         self.error = error
         isComplete = true
+        // Drain marks collected synchronously during synthesis. Only estimate
+        // when the provider genuinely reported none.
+        marks = collector.drain()
         if error == nil, marks.isEmpty { marks = Self.estimateMarks(for: text, duration: duration) }
+        if error == nil {
+            let ns = text as NSString
+            Log.info(String(format: "MARKS n=%d dur=%.3f", marks.count, duration))
+            for m in marks where NSMaxRange(m.range) <= ns.length {
+                Log.info(String(format: "   mark %.3f %@", m.time, ns.substring(with: m.range)))
+            }
+        }
         continuations.forEach { error == nil ? $0.finish() : $0.finish(throwing: error) }
         continuations = []
     }
 
-    /// Spreads words across the chunk's duration in proportion to their length.
+    /// Spreads words across the chunk's duration when the provider reports no
+    /// boundaries of its own.
     ///
-    /// Only Apple's voices report real boundaries. For everything else this is
-    /// close enough to look right, because chunks are single sentences, so the
-    /// error cannot accumulate beyond one of them. Leading silence is not
-    /// modelled, which is the main source of drift.
+    /// Weighted by characters rather than word count, so "a" does not get the
+    /// same airtime as "extraordinarily", and with extra weight after clause
+    /// and sentence punctuation, because every voice pauses there and a flat
+    /// spread runs ahead through the second half of any sentence with a comma
+    /// in it. Chunks are single sentences, so the error cannot compound beyond
+    /// one of them.
     private static func estimateMarks(for text: String, duration: TimeInterval) -> [SpeechMark] {
         guard duration > 0, !text.isEmpty else { return [] }
         let ns = text as NSString
@@ -89,15 +104,27 @@ final class ChunkLoader {
         }
         guard !words.isEmpty else { return [] }
 
-        // Weight by characters spanned rather than word count, so "a" does not
-        // get the same airtime as "extraordinarily".
-        let total = words.reduce(0) { $0 + $1.length }
+        // Weight for each word: its length, plus a pause allowance if the text
+        // right after it is clause or sentence punctuation.
+        func weight(_ index: Int) -> Double {
+            let range = words[index]
+            var w = Double(range.length)
+            let after = NSMaxRange(range)
+            if after < ns.length {
+                let next = ns.substring(with: NSRange(location: after, length: 1))
+                if ".!?".contains(next) { w += 6 }
+                else if ",;:".contains(next) { w += 3 }
+            }
+            return w
+        }
+        let weights = words.indices.map(weight)
+        let total = weights.reduce(0, +)
         guard total > 0 else { return [] }
 
-        var consumed = 0
-        return words.map { range in
-            let time = duration * Double(consumed) / Double(total)
-            consumed += range.length
+        var consumed = 0.0
+        return words.enumerated().map { i, range in
+            let time = duration * consumed / total
+            consumed += weights[i]
             return SpeechMark(range: range, time: time)
         }
     }
@@ -109,5 +136,26 @@ final class ChunkLoader {
             else if isComplete { continuation.finish() }
             else { continuations.append(continuation) }
         }
+    }
+}
+
+/// Gathers speech marks as they arrive, from whatever thread the provider uses.
+///
+/// The marks used to be appended through `Task { @MainActor }`, which is
+/// asynchronous: synthesis finished and the loader fell back to estimated marks
+/// before a single real one had landed, so accurate timings were silently
+/// discarded on every chunk. Collecting under a lock keeps them synchronous and
+/// order-preserving.
+final class MarkCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private var marks: [SpeechMark] = []
+
+    func add(_ mark: SpeechMark) {
+        lock.lock(); marks.append(mark); lock.unlock()
+    }
+
+    func drain() -> [SpeechMark] {
+        lock.lock(); defer { lock.unlock() }
+        return marks
     }
 }
