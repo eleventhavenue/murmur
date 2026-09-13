@@ -7,12 +7,15 @@ struct SpeechError: LocalizedError {
 
 import Foundation
 
-/// Where one word starts, in characters into the chunk and in frames into its
-/// audio. Frames rather than seconds, because the playback rate changes and the
-/// player reports its position in the same source timeline.
+/// Where one word starts: characters into the chunk, and seconds into its audio.
+///
+/// Seconds rather than frames, because providers do not agree on a sample rate.
+/// Apple's voices render at 22.05 kHz while the pipeline runs at 24 kHz and
+/// resamples, so a frame count from one clock means something different in the
+/// other. Timing in seconds is the only value both ends agree on.
 struct SpeechMark {
     let range: NSRange
-    let frame: AVAudioFramePosition
+    let time: TimeInterval
 }
 
 protocol SpeechProvider {

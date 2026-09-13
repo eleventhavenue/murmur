@@ -33,7 +33,7 @@ struct SystemVoiceProvider: SpeechProvider {
                 } else {
                     // Counted before yielding, so a mark arriving during this
                     // callback lands at the right offset.
-                    recorder.advance(by: AVAudioFramePosition(pcm.frameLength))
+                    recorder.advance(by: pcm.frameLength, rate: pcm.format.sampleRate)
                     continuation.yield(pcm)
                 }
             }
@@ -62,24 +62,30 @@ struct SystemVoiceProvider: SpeechProvider {
 private final class MarkRecorder: NSObject, AVSpeechSynthesizerDelegate {
     private let onMark: (SpeechMark) -> Void
     private let lock = NSLock()
-    private var frames: AVAudioFramePosition = 0
+    private var frames: Double = 0
+    /// Learned from the buffers themselves; Apple renders at 22.05 kHz, which
+    /// is not the rate the pipeline plays at.
+    private var sampleRate: Double = 22_050
 
     init(onMark: @escaping (SpeechMark) -> Void) {
         self.onMark = onMark
     }
 
-    func advance(by count: AVAudioFramePosition) {
-        lock.lock(); frames += count; lock.unlock()
+    func advance(by count: AVAudioFrameCount, rate: Double) {
+        lock.lock()
+        if rate > 0 { sampleRate = rate }
+        frames += Double(count)
+        lock.unlock()
     }
 
-    private var currentFrame: AVAudioFramePosition {
+    private var elapsed: TimeInterval {
         lock.lock(); defer { lock.unlock() }
-        return frames
+        return sampleRate > 0 ? frames / sampleRate : 0
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
                            willSpeakRangeOfSpeechString characterRange: NSRange,
                            utterance: AVSpeechUtterance) {
-        onMark(SpeechMark(range: characterRange, frame: currentFrame))
+        onMark(SpeechMark(range: characterRange, time: elapsed))
     }
 }

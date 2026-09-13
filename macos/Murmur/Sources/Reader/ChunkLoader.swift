@@ -16,6 +16,18 @@ final class ChunkLoader {
 
     var totalFrames: AVAudioFramePosition { buffers.reduce(0) { $0 + AVAudioFramePosition($1.frameLength) } }
 
+    /// Length of this chunk's audio in seconds.
+    ///
+    /// Derived from each buffer's own format rather than a frame count, because
+    /// providers render at different rates and the pipeline resamples. A frame
+    /// total is only meaningful next to the clock that produced it.
+    var duration: TimeInterval {
+        buffers.reduce(0) { total, buffer in
+            let rate = buffer.format.sampleRate
+            return rate > 0 ? total + Double(buffer.frameLength) / rate : total
+        }
+    }
+
     func begin(provider: SpeechProvider, text: String) {
         guard task == nil else { return }
         self.text = text
@@ -33,13 +45,13 @@ final class ChunkLoader {
         }
     }
 
-    /// Character range being spoken at a given position into this chunk.
-    func range(atFrame frame: AVAudioFramePosition) -> NSRange? {
+    /// Character range being spoken at a given point in this chunk.
+    func range(at time: TimeInterval) -> NSRange? {
         guard !marks.isEmpty else { return nil }
         // Marks are ascending, so the last one at or before the playhead wins.
         var found: SpeechMark?
         for mark in marks {
-            if mark.frame > frame { break }
+            if mark.time > time { break }
             found = mark
         }
         return found?.range
@@ -55,7 +67,7 @@ final class ChunkLoader {
     private func finish(error: Error?) {
         self.error = error
         isComplete = true
-        if error == nil, marks.isEmpty { marks = Self.estimateMarks(for: text, frames: totalFrames) }
+        if error == nil, marks.isEmpty { marks = Self.estimateMarks(for: text, duration: duration) }
         continuations.forEach { error == nil ? $0.finish() : $0.finish(throwing: error) }
         continuations = []
     }
@@ -66,8 +78,8 @@ final class ChunkLoader {
     /// close enough to look right, because chunks are single sentences, so the
     /// error cannot accumulate beyond one of them. Leading silence is not
     /// modelled, which is the main source of drift.
-    private static func estimateMarks(for text: String, frames: AVAudioFramePosition) -> [SpeechMark] {
-        guard frames > 0, !text.isEmpty else { return [] }
+    private static func estimateMarks(for text: String, duration: TimeInterval) -> [SpeechMark] {
+        guard duration > 0, !text.isEmpty else { return [] }
         let ns = text as NSString
 
         var words: [NSRange] = []
@@ -84,9 +96,9 @@ final class ChunkLoader {
 
         var consumed = 0
         return words.map { range in
-            let frame = AVAudioFramePosition(Double(frames) * Double(consumed) / Double(total))
+            let time = duration * Double(consumed) / Double(total)
             consumed += range.length
-            return SpeechMark(range: range, frame: frame)
+            return SpeechMark(range: range, time: time)
         }
     }
 
