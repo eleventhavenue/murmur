@@ -114,7 +114,7 @@ struct ReaderView: View {
                         .lineLimit(1)
                         .transition(.opacity)
                 }
-                Text(session.currentText)
+                Text(highlighted)
                     .font(Theme.display(26))
                     .foregroundStyle(Theme.ink)
                     .lineSpacing(4)
@@ -134,6 +134,27 @@ struct ReaderView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 96, alignment: .leading)
         .clipped()
+    }
+
+    /// The current sentence with the word being spoken picked out.
+    ///
+    /// Colour rather than a background box: at this size a filled highlight
+    /// jumps around distractingly, while a weight and tint change reads as the
+    /// eye being led. Words already spoken are dimmed so the line has a
+    /// direction, which is most of what makes it feel like following along.
+    private var highlighted: AttributedString {
+        var text = AttributedString(session.currentText)
+        text.foregroundColor = Theme.ink
+
+        guard let spoken = session.spokenRange,
+              let full = Range(NSRange(location: 0, length: (session.currentText as NSString).length),
+                               in: text),
+              let current = Range(spoken, in: text) else { return text }
+
+        text[full.lowerBound..<current.lowerBound].foregroundColor = Theme.inkFaint
+        text[current].foregroundColor = Theme.ink
+        text[current].font = Theme.display(26).weight(.semibold)
+        return text
     }
 
     // MARK: Full script
