@@ -5,9 +5,32 @@ struct SpeechError: LocalizedError {
     var errorDescription: String? { message }
 }
 
+import Foundation
+
+/// Where one word starts, in characters into the chunk and in frames into its
+/// audio. Frames rather than seconds, because the playback rate changes and the
+/// player reports its position in the same source timeline.
+struct SpeechMark {
+    let range: NSRange
+    let frame: AVAudioFramePosition
+}
+
 protocol SpeechProvider {
     /// Synthesises one chunk, delivering PCM buffers as soon as they arrive.
-    func synthesize(_ text: String, onBuffer: @escaping (AVAudioPCMBuffer) async -> Void) async throws
+    ///
+    /// `onMark` reports word boundaries where the provider knows them. Most do
+    /// not, so callers must cope with receiving none; ChunkLoader estimates in
+    /// that case.
+    func synthesize(_ text: String,
+                    onBuffer: @escaping (AVAudioPCMBuffer) async -> Void,
+                    onMark: @escaping (SpeechMark) -> Void) async throws
+}
+
+extension SpeechProvider {
+    /// For callers that only want audio.
+    func synthesize(_ text: String, onBuffer: @escaping (AVAudioPCMBuffer) async -> Void) async throws {
+        try await synthesize(text, onBuffer: onBuffer, onMark: { _ in })
+    }
 }
 
 enum PCM {

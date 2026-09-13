@@ -12,7 +12,9 @@ struct MurmurCloudProvider: SpeechProvider {
     let voiceID: String
     static let sampleRate: Double = 24_000
 
-    func synthesize(_ text: String, onBuffer: @escaping (AVAudioPCMBuffer) async -> Void) async throws {
+    func synthesize(_ text: String,
+                    onBuffer: @escaping (AVAudioPCMBuffer) async -> Void,
+                    onMark: @escaping (SpeechMark) -> Void) async throws {
         guard !licenseKey.isEmpty else {
             throw SpeechError(message: "Add your Murmur licence key in Settings, or pick a different voice.")
         }

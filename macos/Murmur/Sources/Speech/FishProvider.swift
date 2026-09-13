@@ -7,7 +7,9 @@ struct FishProvider: SpeechProvider {
     let referenceID: String
     static let sampleRate: Double = 24_000
 
-    func synthesize(_ text: String, onBuffer: @escaping (AVAudioPCMBuffer) async -> Void) async throws {
+    func synthesize(_ text: String,
+                    onBuffer: @escaping (AVAudioPCMBuffer) async -> Void,
+                    onMark: @escaping (SpeechMark) -> Void) async throws {
         guard !apiKey.isEmpty else { throw SpeechError(message: "Add your Fish Audio API key in Settings.") }
         var request = URLRequest(url: URL(string: "https://api.fish.audio/v1/tts")!)
         request.httpMethod = "POST"

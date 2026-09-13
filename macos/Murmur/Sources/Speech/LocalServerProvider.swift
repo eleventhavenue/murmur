@@ -20,7 +20,9 @@ struct LocalServerProvider: SpeechProvider {
     /// OpenAI's documented rate for `pcm`, and what every compatible server emits.
     static let defaultSampleRate: Double = 24_000
 
-    func synthesize(_ text: String, onBuffer: @escaping (AVAudioPCMBuffer) async -> Void) async throws {
+    func synthesize(_ text: String,
+                    onBuffer: @escaping (AVAudioPCMBuffer) async -> Void,
+                    onMark: @escaping (SpeechMark) -> Void) async throws {
         guard let url = Self.speechURL(from: baseURL) else {
             throw SpeechError(message: "That server address doesn't look like a URL.")
         }

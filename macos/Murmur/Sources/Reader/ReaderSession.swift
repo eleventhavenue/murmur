@@ -15,6 +15,8 @@ final class ReaderSession: ObservableObject {
     @Published private(set) var currentIndex = 0
     @Published private(set) var progress: Double = 0
     @Published private(set) var levels = [Float](repeating: 0, count: 24)
+    /// Characters of `currentText` being spoken right now, for the highlight.
+    @Published private(set) var spokenRange: NSRange?
     @Published private(set) var sourceApp: String = ""
     @Published var speed: Double {
         didSet { audio.rate = Float(speed); Settings.shared.speed = speed }
@@ -87,6 +89,7 @@ final class ReaderSession: ObservableObject {
         audio.reset()
         currentIndex = index
         chunkStartSample = 0
+        spokenRange = nil
         phase = .preparing
         do { try audio.start() } catch { phase = .failed(error.localizedDescription); return }
         pumpTask = Task { await pump(from: index, gen: gen) }
@@ -180,7 +183,17 @@ final class ReaderSession: ObservableObject {
         } else {
             currentIndex = index + 1
             chunkStartSample = audio.sampleTime
+            spokenRange = nil
         }
+    }
+
+    /// Maps the playhead to a word in the current chunk.
+    private func updateSpokenRange() {
+        guard let loader = loaders[currentIndex] else { spokenRange = nil; return }
+        let into = audio.sampleTime - chunkStartSample
+        guard into >= 0 else { spokenRange = nil; return }
+        let next = loader.range(atFrame: into)
+        if next != spokenRange { spokenRange = next }
     }
 
     private func startTicker() {
@@ -192,6 +205,7 @@ final class ReaderSession: ObservableObject {
 
     private func tick() {
         guard phase == .playing || phase == .paused, !chunks.isEmpty else { return }
+        updateSpokenRange()
         let totalChars = Double(chunks.reduce(0) { $0 + $1.text.count })
         let before = Double(chunks[..<currentIndex].reduce(0) { $0 + $1.text.count })
         var fraction = 0.0

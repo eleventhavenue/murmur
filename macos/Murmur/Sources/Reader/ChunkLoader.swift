@@ -1,9 +1,14 @@
 import AVFoundation
+import Foundation
 
 /// Fetches one chunk's audio and lets any number of consumers replay it (cached for instant back-skips).
 @MainActor
 final class ChunkLoader {
     private(set) var buffers: [AVAudioPCMBuffer] = []
+    /// Word boundaries, in ascending frame order. Real where the provider
+    /// supplied them, estimated otherwise.
+    private(set) var marks: [SpeechMark] = []
+    private var text = ""
     private(set) var isComplete = false
     private(set) var error: Error?
     private var continuations: [AsyncThrowingStream<AVAudioPCMBuffer, Error>.Continuation] = []
@@ -13,16 +18,31 @@ final class ChunkLoader {
 
     func begin(provider: SpeechProvider, text: String) {
         guard task == nil else { return }
+        self.text = text
         task = Task { [weak self] in
             do {
                 try await provider.synthesize(text) { buffer in
                     await MainActor.run { self?.append(buffer) }
+                } onMark: { mark in
+                    Task { @MainActor in self?.marks.append(mark) }
                 }
                 await MainActor.run { self?.finish(error: nil) }
             } catch {
                 await MainActor.run { self?.finish(error: error) }
             }
         }
+    }
+
+    /// Character range being spoken at a given position into this chunk.
+    func range(atFrame frame: AVAudioFramePosition) -> NSRange? {
+        guard !marks.isEmpty else { return nil }
+        // Marks are ascending, so the last one at or before the playhead wins.
+        var found: SpeechMark?
+        for mark in marks {
+            if mark.frame > frame { break }
+            found = mark
+        }
+        return found?.range
     }
 
     func cancel() { task?.cancel() }
@@ -35,8 +55,39 @@ final class ChunkLoader {
     private func finish(error: Error?) {
         self.error = error
         isComplete = true
+        if error == nil, marks.isEmpty { marks = Self.estimateMarks(for: text, frames: totalFrames) }
         continuations.forEach { error == nil ? $0.finish() : $0.finish(throwing: error) }
         continuations = []
+    }
+
+    /// Spreads words across the chunk's duration in proportion to their length.
+    ///
+    /// Only Apple's voices report real boundaries. For everything else this is
+    /// close enough to look right, because chunks are single sentences, so the
+    /// error cannot accumulate beyond one of them. Leading silence is not
+    /// modelled, which is the main source of drift.
+    private static func estimateMarks(for text: String, frames: AVAudioFramePosition) -> [SpeechMark] {
+        guard frames > 0, !text.isEmpty else { return [] }
+        let ns = text as NSString
+
+        var words: [NSRange] = []
+        ns.enumerateSubstrings(in: NSRange(location: 0, length: ns.length),
+                               options: [.byWords, .substringNotRequired]) { _, range, _, _ in
+            words.append(range)
+        }
+        guard !words.isEmpty else { return [] }
+
+        // Weight by characters spanned rather than word count, so "a" does not
+        // get the same airtime as "extraordinarily".
+        let total = words.reduce(0) { $0 + $1.length }
+        guard total > 0 else { return [] }
+
+        var consumed = 0
+        return words.map { range in
+            let frame = AVAudioFramePosition(Double(frames) * Double(consumed) / Double(total))
+            consumed += range.length
+            return SpeechMark(range: range, frame: frame)
+        }
     }
 
     func stream() -> AsyncThrowingStream<AVAudioPCMBuffer, Error> {

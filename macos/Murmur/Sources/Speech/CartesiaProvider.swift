@@ -7,7 +7,9 @@ struct CartesiaProvider: SpeechProvider {
     let voiceID: String
     static let sampleRate: Double = 24_000
 
-    func synthesize(_ text: String, onBuffer: @escaping (AVAudioPCMBuffer) async -> Void) async throws {
+    func synthesize(_ text: String,
+                    onBuffer: @escaping (AVAudioPCMBuffer) async -> Void,
+                    onMark: @escaping (SpeechMark) -> Void) async throws {
         guard !apiKey.isEmpty else { throw SpeechError(message: "Add your Cartesia API key in Settings.") }
         var request = URLRequest(url: URL(string: "https://api.cartesia.ai/tts/bytes")!)
         request.httpMethod = "POST"
