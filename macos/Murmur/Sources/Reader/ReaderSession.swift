@@ -15,6 +15,8 @@ final class ReaderSession: ObservableObject {
     @Published private(set) var currentIndex = 0
     @Published private(set) var progress: Double = 0
     @Published private(set) var levels = [Float](repeating: 0, count: 24)
+    /// Characters of `currentText` being spoken right now, for the highlight.
+    @Published private(set) var spokenRange: NSRange?
     @Published private(set) var sourceApp: String = ""
     @Published var speed: Double {
         didSet { audio.rate = Float(speed); Settings.shared.speed = speed }
@@ -87,6 +89,7 @@ final class ReaderSession: ObservableObject {
         audio.reset()
         currentIndex = index
         chunkStartSample = 0
+        spokenRange = nil
         phase = .preparing
         do { try audio.start() } catch { phase = .failed(error.localizedDescription); return }
         pumpTask = Task { await pump(from: index, gen: gen) }
@@ -180,7 +183,24 @@ final class ReaderSession: ObservableObject {
         } else {
             currentIndex = index + 1
             chunkStartSample = audio.sampleTime
+            spokenRange = nil
         }
+    }
+
+    /// Maps the playhead to a word in the current chunk.
+    ///
+    /// The playhead counts frames in the pipeline's clock, so it is converted
+    /// to seconds before being compared with marks. Those two clocks are not
+    /// the same: Apple's voices render at 22.05 kHz and the pipeline plays at
+    /// 24 kHz, so comparing raw frame counts drifted the highlight roughly 9%
+    /// further behind with every word.
+    private func updateSpokenRange() {
+        guard let loader = loaders[currentIndex] else { spokenRange = nil; return }
+        let frames = audio.sampleTime - chunkStartSample
+        guard frames >= 0 else { spokenRange = nil; return }
+        let seconds = Double(frames) / audio.format.sampleRate
+        let next = loader.range(at: seconds)
+        if next != spokenRange { spokenRange = next }
     }
 
     private func startTicker() {
@@ -192,11 +212,14 @@ final class ReaderSession: ObservableObject {
 
     private func tick() {
         guard phase == .playing || phase == .paused, !chunks.isEmpty else { return }
+        updateSpokenRange()
         let totalChars = Double(chunks.reduce(0) { $0 + $1.text.count })
         let before = Double(chunks[..<currentIndex].reduce(0) { $0 + $1.text.count })
         var fraction = 0.0
-        if let l = loaders[currentIndex], l.isComplete, l.totalFrames > 0 {
-            fraction = min(1, Double(audio.sampleTime - chunkStartSample) / Double(l.totalFrames))
+        if let l = loaders[currentIndex], l.isComplete, l.duration > 0 {
+            // Same clock mismatch as the highlight: compare seconds, not frames.
+            let seconds = Double(audio.sampleTime - chunkStartSample) / audio.format.sampleRate
+            fraction = min(1, seconds / l.duration)
         }
         progress = min(1, (before + fraction * Double(chunks[currentIndex].text.count)) / max(totalChars, 1))
     }

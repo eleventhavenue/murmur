@@ -123,6 +123,19 @@ Zarvox. Ranking on the identifier prefix instead
 `com.apple.speech.synthesis.voice`) makes it deterministic, and ties break toward
 your own regional variant.
 
+## Following along
+
+The player highlights each word as it is spoken. Timings are exact for the
+System voices (Apple reports word boundaries during rendering) and for Kokoro
+through Kokoro-FastAPI, whose `/dev/captioned_speech` endpoint returns a start
+time for every word. Other providers report nothing, so words are spread across
+the sentence by length with a pause allowance after punctuation; because a chunk
+is one sentence, that estimate cannot drift past it.
+
+The captioned endpoint does not stream, so the first sentence of a reading waits
+for its synthesis to finish before any sound. Later sentences are prefetched and
+are unaffected.
+
 ## Design
 
 The app uses the same brand as [murmurrrr.com](https://murmurrrr.com): bone
