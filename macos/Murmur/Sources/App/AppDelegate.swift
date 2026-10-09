@@ -8,6 +8,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var panel = ReaderPanel(session: session)
     private lazy var lens = LensController()
     private var settingsWindow: SettingsWindow?
+    private var mainWindow: MainWindow?
+    private var onboarding: OnboardingWindow?
     private var statusItem: NSStatusItem!
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -27,11 +29,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lens.onPick = { [weak self] text in self?.read(text, from: "Lens") }
         lens.onCancel = { }
 
-        if !settings.hasOnboarded || !AX.isTrusted {
-            settings.hasOnboarded = true
-            showSettings()
-            if !AX.isTrusted { AX.requestTrust() }
+        // Windows come and go; the Dock icon follows them.
+        NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { [weak self] _ in
+            DispatchQueue.main.async { self?.updateActivationPolicy() }
         }
+
+        if !settings.hasOnboarded {
+            showOnboarding()
+        }
+
+        // Bring the local engine up in the background so the first hotkey
+        // press finds it ready. Readings that arrive first use Apple's voice.
+        if settings.provider == .localServer {
+            Task { await LocalEngine.shared.warmUp(startDocker: settings.autoStartEngine) }
+        }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showMain()
+        return true
+    }
+
+    /// Menu-bar app normally; a regular app with a Dock icon while a window
+    /// is open, which is how Wispr Flow and friends behave.
+    private func updateActivationPolicy() {
+        let anyVisible = [mainWindow, onboarding, settingsWindow].contains { $0?.isVisible == true }
+        NSApp.setActivationPolicy(anyVisible ? .regular : .accessory)
+    }
+
+    @objc func showMain() { showMain(.home) }
+
+    func showMain(_ page: MainPage) {
+        if mainWindow == nil {
+            mainWindow = MainWindow(settings: settings, session: session) { [weak self] text, source in self?.read(text, from: source) }
+        }
+        mainWindow?.show(page)
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        mainWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    private func showOnboarding() {
+        if onboarding == nil {
+            onboarding = OnboardingWindow(settings: settings, session: session,
+                onTest: { [weak self] sample in self?.read(sample, from: "Murmur") },
+                onFinish: { [weak self] in
+                    guard let self else { return }
+                    self.settings.hasOnboarded = true
+                    self.onboarding?.orderOut(nil)
+                    self.showMain()
+                })
+        }
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        onboarding?.makeKeyAndOrderFront(nil)
     }
     private var bag = Set<AnyCancellable>()
 
@@ -90,13 +141,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         lens.begin()
     }
 
-    @objc func showSettings() {
-        if settingsWindow == nil {
-            settingsWindow = SettingsWindow(settings: settings) { [weak self] sample in self?.read(sample, from: "Murmur") }
-        }
-        NSApp.activate(ignoringOtherApps: true)
-        settingsWindow?.makeKeyAndOrderFront(nil)
-    }
+    @objc func showSettings() { showMain(.settings) }
 
     @objc private func quit() { NSApp.terminate(nil) }
 
@@ -131,6 +176,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Read Clipboard", action: #selector(readClipboard), keyEquivalent: "")
         menu.addItem(withTitle: "Point & Read…", action: #selector(startLens), keyEquivalent: "")
         menu.addItem(.separator())
+        menu.addItem(withTitle: "Open Murmur", action: #selector(showMain as () -> Void), keyEquivalent: "o")
         menu.addItem(withTitle: "Settings…", action: #selector(showSettings), keyEquivalent: ",")
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Murmur", action: #selector(quit), keyEquivalent: "q")

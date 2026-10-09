@@ -18,6 +18,9 @@ final class ReaderSession: ObservableObject {
     /// Characters of `currentText` being spoken right now, for the highlight.
     @Published private(set) var spokenRange: NSRange?
     @Published private(set) var sourceApp: String = ""
+    /// A one-line explanation shown in the player when something degraded
+    /// gracefully, such as falling back to the system voice.
+    @Published private(set) var notice: String?
     @Published var speed: Double {
         didSet { audio.rate = Float(speed); Settings.shared.speed = speed }
     }
@@ -45,9 +48,11 @@ final class ReaderSession: ObservableObject {
     func start(text: String, sourceApp: String = "") {
         teardown()
         let settings = Settings.shared
-        let cleaner = TextCleaner(stripMarkdown: settings.cleanMarkdown, joinWrappedLines: settings.joinWrappedLines)
+        let cleaner = TextCleaner(stripMarkdown: settings.cleanMarkdown, joinWrappedLines: settings.joinWrappedLines,
+                                  extraSpokenForms: Pronunciation.shared.asMap)
         originalText = text
         self.sourceApp = sourceApp
+        notice = nil
         chunks = Chunker.chunks(for: cleaner.clean(text))
         currentIndex = 0
         progress = 0
@@ -103,7 +108,18 @@ final class ReaderSession: ObservableObject {
         phase = .idle
     }
 
+    /// Wall-clock start of the current reading, for the listening-time stat.
+    private var readingStartedAt: Date?
+
+    private func recordInsights() {
+        guard let started = readingStartedAt else { return }
+        readingStartedAt = nil
+        let words = chunks.prefix(currentIndex + 1).reduce(0) { $0 + $1.text.split(separator: " ").count }
+        Insights.shared.record(words: words, seconds: Date().timeIntervalSince(started))
+    }
+
     private func teardown() {
+        recordInsights()
         generation += 1
         pumpTask?.cancel()
         pumpTask = nil
@@ -117,6 +133,18 @@ final class ReaderSession: ObservableObject {
     // MARK: - Pipeline
 
     private func provider() -> SpeechProvider {
+        let chosen = chosenProvider()
+        guard Settings.shared.provider != .system else { return chosen }
+        return FallbackProvider(
+            primary: chosen,
+            primaryName: Settings.shared.provider.label,
+            fallback: SystemVoiceProvider(voiceIdentifier: Settings.shared.systemVoice),
+            onFallback: { [weak self] message in
+                if self?.notice == nil { self?.notice = message; Log.info("fallback: \(message)") }
+            })
+    }
+
+    private func chosenProvider() -> SpeechProvider {
         let s = Settings.shared
         switch s.provider {
         case .system: return SystemVoiceProvider(voiceIdentifier: s.systemVoice)
@@ -158,6 +186,7 @@ final class ReaderSession: ObservableObject {
                         started = true
                         audio.play()
                         phase = .playing
+                        readingStartedAt = Date()
                     }
                 }
             } catch {
@@ -180,6 +209,7 @@ final class ReaderSession: ObservableObject {
             phase = .finished
             progress = 1
             ticker?.invalidate()
+            recordInsights()
         } else {
             currentIndex = index + 1
             chunkStartSample = audio.sampleTime

@@ -147,6 +147,34 @@ final class LocalEngine: ObservableObject {
         await start()
     }
 
+    /// Brings the whole stack up at app launch, so the first hotkey press finds
+    /// the engine ready rather than paying 10-45 seconds for it.
+    ///
+    /// After a reboot Docker Desktop itself is usually not running, and a
+    /// container cannot start without its daemon, so this opens Docker in the
+    /// background first when the user has asked for that. Nothing here blocks:
+    /// readings that arrive early fall back to the system voice.
+    func warmUp(startDocker: Bool) async {
+        guard let docker = dockerPath else { state = .noDocker; return }
+        let daemonUp = await daemonIsUp(docker)
+        if !daemonUp {
+            guard startDocker else { state = .noDocker; return }
+            Log.info("engine: starting Docker Desktop in the background")
+            _ = await run("/usr/bin/open", ["-g", "-j", "-a", "Docker"])
+            // Docker Desktop takes a while to bring its daemon up.
+            for _ in 0..<60 {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                if await daemonIsUp(docker) { break }
+            }
+        }
+        await ensureRunning()
+    }
+
+    private func daemonIsUp(_ docker: String) async -> Bool {
+        if case .success = await run(docker, ["info", "--format", "{{.ServerVersion}}"]) { return true }
+        return false
+    }
+
     func stop() async {
         guard let docker = dockerPath else { return }
         _ = await run(docker, ["stop", Self.container])

@@ -5,6 +5,9 @@ import Foundation
 struct TextCleaner {
     var stripMarkdown = true
     var joinWrappedLines = true
+    /// The user's own pronunciation dictionary, applied after the built-in
+    /// table so a personal entry can override it.
+    var extraSpokenForms: [String: String] = [:]
 
     func clean(_ raw: String) -> String {
         var s = raw.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
@@ -84,7 +87,7 @@ struct TextCleaner {
     /// READMEs-inside-a-longer-token does not.
     private func speakAcronyms(_ text: String) -> String {
         var out = text
-        for (written, spoken) in Self.spokenForms {
+        for (written, spoken) in Self.spokenForms.merging(extraSpokenForms, uniquingKeysWith: { _, user in user }) {
             // Optional trailing "s" so READMEs becomes "Read Mes" rather than
             // falling back to being spelled out.
             let pattern = "\\b" + NSRegularExpression.escapedPattern(for: written) + "(s?)\\b"
