@@ -45,6 +45,9 @@ final class Settings: ObservableObject {
     @Published var cleanMarkdown: Bool { didSet { d.set(cleanMarkdown, forKey: "cleanMarkdown") } }
     @Published var joinWrappedLines: Bool { didSet { d.set(joinWrappedLines, forKey: "joinWrappedLines") } }
     @Published var lensFallback: Bool { didSet { d.set(lensFallback, forKey: "lensFallback") } }
+    /// Start Docker and the local engine when Murmur launches, so local voices
+    /// are ready before the first hotkey press.
+    @Published var autoStartEngine: Bool { didSet { d.set(autoStartEngine, forKey: "autoStartEngine") } }
     @Published var hotKey: HotKey { didSet { if let data = try? JSONEncoder().encode(hotKey) { d.set(data, forKey: "hotKey") } } }
     @Published var hasOnboarded: Bool { didSet { d.set(hasOnboarded, forKey: "hasOnboarded") } }
 
@@ -82,6 +85,7 @@ final class Settings: ObservableObject {
         cleanMarkdown = d.object(forKey: "cleanMarkdown") as? Bool ?? true
         joinWrappedLines = d.object(forKey: "joinWrappedLines") as? Bool ?? true
         lensFallback = d.object(forKey: "lensFallback") as? Bool ?? true
+        autoStartEngine = d.object(forKey: "autoStartEngine") as? Bool ?? true
         hasOnboarded = d.bool(forKey: "hasOnboarded")
         if let data = d.data(forKey: "hotKey"), let hk = try? JSONDecoder().decode(HotKey.self, from: data) {
             hotKey = hk

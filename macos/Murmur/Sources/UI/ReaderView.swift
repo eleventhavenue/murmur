@@ -43,7 +43,14 @@ struct ReaderView: View {
                 .frame(width: 6, height: 6)
                 .opacity(session.phase == .preparing ? 0.4 : 1)
                 .animation(session.phase == .preparing ? .easeInOut(duration: 0.7).repeatForever() : .default, value: session.phase)
-            if !session.sourceApp.isEmpty {
+            if let notice = session.notice {
+                Text(notice)
+                    .font(Theme.ui(10))
+                    .foregroundStyle(Theme.inkFaint)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .help(notice)
+            } else if !session.sourceApp.isEmpty {
                 Text(session.sourceApp.uppercased())
                     .font(Theme.ui(10, .medium))
                     .tracking(1.4)
