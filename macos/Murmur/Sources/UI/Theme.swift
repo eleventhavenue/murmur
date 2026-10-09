@@ -90,10 +90,44 @@ struct Frost: NSViewRepresentable {
 /// "murmur." — the site's wordmark, trailing period and all.
 struct Wordmark: View {
     var size: CGFloat = 15
+
+    /// 0 at rest, 1 at full volume. Feed it the live output level and the
+    /// period hops in time with the voice.
+    var bounce: Double = 0
+
+    /// Tints the period only, so the logo doubles as the status light instead
+    /// of needing a separate dot beside it.
+    var accent: Color?
+
+    /// Slow breath for the moment between pressing the hotkey and audio
+    /// arriving, when there is no level to react to yet.
+    var pulsing: Bool = false
+
     var body: some View {
-        Text("murmur.")
-            .font(Theme.display(size))
-            .foregroundStyle(Theme.ink)
+        // Drawn as two runs so the period can move independently. Rendered at
+        // zero spacing, the serif's own advance widths keep the spacing right.
+        HStack(spacing: 0) {
+            Text("murmur")
+                .font(Theme.display(size))
+                .foregroundStyle(Theme.ink)
+            period
+        }
+        .fixedSize()
+    }
+
+    private var period: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !pulsing)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let breath = pulsing ? 0.4 + 0.6 * (0.5 + 0.5 * sin(t * 3.4)) : 1.0
+            Text(".")
+                .font(Theme.display(size))
+                .foregroundStyle(accent ?? Theme.ink)
+                .opacity(breath)
+                // Hops up only. A period that dips below the baseline reads as
+                // a rendering glitch rather than movement.
+                .offset(y: -bounce * size * 0.42)
+                .animation(.spring(response: 0.17, dampingFraction: 0.55), value: bounce)
+        }
     }
 }
 
